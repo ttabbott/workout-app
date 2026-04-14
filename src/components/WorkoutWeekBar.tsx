@@ -14,10 +14,11 @@ interface Props {
   completedKeys: Set<WorkoutKey>
   suggestedKey: WorkoutKey | 'filler'
   activeKey: WorkoutKey | 'filler'
+  activeLabel: string
   pickerOptions: WorkoutOption[]
 }
 
-export default function WorkoutWeekBar({ completedKeys, suggestedKey, activeKey, pickerOptions }: Props) {
+export default function WorkoutWeekBar({ completedKeys, suggestedKey, activeKey, activeLabel, pickerOptions }: Props) {
   const [open, setOpen] = useState(false)
   const router = useRouter()
   const allDone = suggestedKey === 'filler'
@@ -29,6 +30,16 @@ export default function WorkoutWeekBar({ completedKeys, suggestedKey, activeKey,
 
   return (
     <div className="bg-gray-900 rounded-2xl border border-gray-800 px-4 py-3 mb-4">
+      {/* Header: workout identity */}
+      {!allDone && activeKey !== 'filler' && (
+        <div className="mb-2.5">
+          <p className="text-xs font-semibold uppercase tracking-widest text-gray-500">
+            Workout {activeKey}
+          </p>
+          <p className="text-sm font-medium text-white leading-snug">{activeLabel}</p>
+        </div>
+      )}
+
       {/* Single row: chips + change button */}
       <div className="flex items-center gap-2">
         {/* Compact chips */}

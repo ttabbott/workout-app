@@ -183,6 +183,7 @@ export default async function HomePage({
           completedKeys={completedKeys}
           suggestedKey={suggestedKey}
           activeKey={activeKey}
+          activeLabel={todayWorkout.label}
           pickerOptions={pickerOptions}
         />
 
