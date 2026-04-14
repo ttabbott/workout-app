@@ -254,6 +254,13 @@ function ExerciseCard({ exercise, log, onSetToggle, onSetUpdate, onCardioComplet
           {exercise.type === 'strength' && (
             <p className="text-gray-500 text-xs mt-0.5">
               {setCount} sets — progressive loading
+              {exercise.restSeconds && (
+                <span className="ml-2 text-gray-600">
+                  · ⏱ {exercise.restSeconds >= 60
+                    ? `${exercise.restSeconds / 60} min`
+                    : `${exercise.restSeconds}s`} rest
+                </span>
+              )}
             </p>
           )}
           {exercise.notes && (

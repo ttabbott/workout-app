@@ -11,6 +11,7 @@ const WORKOUT_A: DayWorkout = {
       id: 'a-bench-press',
       name: 'Barbell Bench Press',
       type: 'strength',
+      restSeconds: 180,
       setDetails: [
         { weight: 95,  reps: '10', note: 'warm-up' },
         { weight: 115, reps: '8',  note: 'working' },
@@ -22,6 +23,7 @@ const WORKOUT_A: DayWorkout = {
       id: 'a-incline-db',
       name: 'Incline Dumbbell Press',
       type: 'strength',
+      restSeconds: 120,
       setDetails: [
         { weight: 40, reps: '12' },
         { weight: 50, reps: '10' },
@@ -33,6 +35,7 @@ const WORKOUT_A: DayWorkout = {
       id: 'a-cable-fly',
       name: 'Cable Chest Fly',
       type: 'strength',
+      restSeconds: 60,
       setDetails: [
         { weight: 20, reps: '15' },
         { weight: 25, reps: '12' },
@@ -44,6 +47,7 @@ const WORKOUT_A: DayWorkout = {
       id: 'a-ohp',
       name: 'Overhead Press (Barbell)',
       type: 'strength',
+      restSeconds: 180,
       setDetails: [
         { weight: 65, reps: '10', note: 'warm-up' },
         { weight: 75, reps: '8'  },
@@ -55,6 +59,7 @@ const WORKOUT_A: DayWorkout = {
       id: 'a-lateral-raise',
       name: 'Lateral Raises',
       type: 'strength',
+      restSeconds: 60,
       setDetails: [
         { weight: 12, reps: '15' },
         { weight: 15, reps: '12' },
@@ -65,6 +70,7 @@ const WORKOUT_A: DayWorkout = {
       id: 'a-tricep-pushdown',
       name: 'Tricep Cable Pushdown',
       type: 'strength',
+      restSeconds: 60,
       setDetails: [
         { weight: 35, reps: '12' },
         { weight: 40, reps: '10' },
@@ -93,6 +99,7 @@ const WORKOUT_B: DayWorkout = {
       id: 'b-rdl',
       name: 'Romanian Deadlift',
       type: 'strength',
+      restSeconds: 180,
       setDetails: [
         { weight: 135, reps: '10', note: 'warm-up' },
         { weight: 165, reps: '8'  },
@@ -104,6 +111,7 @@ const WORKOUT_B: DayWorkout = {
       id: 'b-pullup',
       name: 'Pull-Ups',
       type: 'strength',
+      restSeconds: 120,
       setDetails: [
         { unit: 'bodyweight', reps: '8' },
         { unit: 'bodyweight', reps: '8' },
@@ -115,6 +123,7 @@ const WORKOUT_B: DayWorkout = {
       id: 'b-seated-row',
       name: 'Seated Cable Row',
       type: 'strength',
+      restSeconds: 90,
       setDetails: [
         { weight: 100, reps: '12' },
         { weight: 120, reps: '10' },
@@ -125,6 +134,7 @@ const WORKOUT_B: DayWorkout = {
       id: 'b-lat-pulldown',
       name: 'Lat Pulldown',
       type: 'strength',
+      restSeconds: 90,
       setDetails: [
         { weight: 90,  reps: '12' },
         { weight: 110, reps: '10' },
@@ -135,6 +145,7 @@ const WORKOUT_B: DayWorkout = {
       id: 'b-bb-curl',
       name: 'Barbell Bicep Curl',
       type: 'strength',
+      restSeconds: 60,
       setDetails: [
         { weight: 55, reps: '10' },
         { weight: 65, reps: '8'  },
@@ -145,6 +156,7 @@ const WORKOUT_B: DayWorkout = {
       id: 'b-hammer-curl',
       name: 'Hammer Curl',
       type: 'strength',
+      restSeconds: 60,
       setDetails: [
         { weight: 25, reps: '12' },
         { weight: 30, reps: '12' },
@@ -165,6 +177,7 @@ const WORKOUT_C: DayWorkout = {
       id: 'c-squat',
       name: 'Barbell Back Squat',
       type: 'strength',
+      restSeconds: 180,
       setDetails: [
         { weight: 135, reps: '10', note: 'warm-up' },
         { weight: 165, reps: '8'  },
@@ -176,6 +189,7 @@ const WORKOUT_C: DayWorkout = {
       id: 'c-leg-press',
       name: 'Leg Press',
       type: 'strength',
+      restSeconds: 120,
       setDetails: [
         { weight: 225, reps: '12' },
         { weight: 270, reps: '10' },
@@ -186,6 +200,7 @@ const WORKOUT_C: DayWorkout = {
       id: 'c-lunge',
       name: 'Walking Lunges',
       type: 'strength',
+      restSeconds: 90,
       setDetails: [
         { weight: 35, reps: '12 each' },
         { weight: 40, reps: '12 each' },
@@ -197,6 +212,7 @@ const WORKOUT_C: DayWorkout = {
       id: 'c-leg-curl',
       name: 'Lying Leg Curl',
       type: 'strength',
+      restSeconds: 90,
       setDetails: [
         { weight: 65, reps: '12' },
         { weight: 80, reps: '10' },
@@ -207,6 +223,7 @@ const WORKOUT_C: DayWorkout = {
       id: 'c-calf-raise',
       name: 'Standing Calf Raise',
       type: 'strength',
+      restSeconds: 60,
       setDetails: [
         { weight: 135, reps: '20' },
         { weight: 180, reps: '15' },
@@ -236,6 +253,7 @@ const WORKOUT_D: DayWorkout = {
       id: 'd-db-shoulder-press',
       name: 'Dumbbell Shoulder Press',
       type: 'strength',
+      restSeconds: 120,
       setDetails: [
         { weight: 35, reps: '12', note: 'warm-up' },
         { weight: 45, reps: '10' },
@@ -247,6 +265,7 @@ const WORKOUT_D: DayWorkout = {
       id: 'd-arnold-press',
       name: 'Arnold Press',
       type: 'strength',
+      restSeconds: 90,
       setDetails: [
         { weight: 30, reps: '12' },
         { weight: 35, reps: '10' },
@@ -258,6 +277,7 @@ const WORKOUT_D: DayWorkout = {
       id: 'd-face-pull',
       name: 'Face Pull',
       type: 'strength',
+      restSeconds: 60,
       setDetails: [
         { weight: 25, reps: '15' },
         { weight: 30, reps: '15' },
@@ -269,6 +289,7 @@ const WORKOUT_D: DayWorkout = {
       id: 'd-front-raise',
       name: 'Dumbbell Front Raise',
       type: 'strength',
+      restSeconds: 60,
       setDetails: [
         { weight: 15, reps: '12' },
         { weight: 20, reps: '12' },
@@ -279,6 +300,7 @@ const WORKOUT_D: DayWorkout = {
       id: 'd-plank',
       name: 'Plank',
       type: 'strength',
+      restSeconds: 60,
       setDetails: [
         { unit: 'bodyweight', reps: '45s' },
         { unit: 'bodyweight', reps: '60s' },
@@ -289,6 +311,7 @@ const WORKOUT_D: DayWorkout = {
       id: 'd-cable-crunch',
       name: 'Cable Crunch',
       type: 'strength',
+      restSeconds: 60,
       setDetails: [
         { weight: 40, reps: '15' },
         { weight: 50, reps: '15' },
@@ -300,6 +323,7 @@ const WORKOUT_D: DayWorkout = {
       id: 'd-russian-twist',
       name: 'Russian Twist',
       type: 'strength',
+      restSeconds: 45,
       setDetails: [
         { weight: 20, reps: '20 total' },
         { weight: 25, reps: '20 total' },

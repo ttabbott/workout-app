@@ -25,6 +25,7 @@ export interface Exercise {
   duration?: number
   intensity?: string
   // Extra
+  restSeconds?: number      // recommended rest between sets
   youtubeUrl?: string
   notes?: string
 }
