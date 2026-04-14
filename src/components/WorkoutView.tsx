@@ -1,12 +1,11 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useRef } from 'react'
 import { Exercise, SetLog, ExerciseLog } from '@/lib/types'
 import { createClient } from '@/lib/supabase/client'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
-// ─── DB helpers ───────────────────────────────────────────────────────────────
-
-interface DbSetLog {
+export interface InitialSetLog {
   exercise_id: string
   set_index: number   // -1 for cardio
   completed: boolean
@@ -14,15 +13,13 @@ interface DbSetLog {
   actual_reps: number | null
 }
 
-export interface InitialSetLog extends DbSetLog {}
-
 async function upsertSetLog(
+  supabase: SupabaseClient,
   userId: string,
   logDate: string,
-  payload: DbSetLog
-) {
-  const supabase = createClient()
-  await supabase.from('set_logs').upsert(
+  payload: InitialSetLog
+): Promise<string | null> {
+  const { error } = await supabase.from('set_logs').upsert(
     {
       user_id: userId,
       log_date: logDate,
@@ -34,19 +31,25 @@ async function upsertSetLog(
     },
     { onConflict: 'user_id,log_date,exercise_id,set_index' }
   )
+  if (error) {
+    console.error('[WorkoutView] set_logs upsert failed:', error)
+    return error.message
+  }
+  return null
 }
 
-async function markGymCompleted(userId: string, logDate: string, dayType: string) {
-  const supabase = createClient()
-  await supabase.from('daily_logs').upsert(
-    {
-      user_id: userId,
-      log_date: logDate,
-      day_type: dayType,
-      gym_completed: true,
-    },
+async function upsertDailyLog(
+  supabase: SupabaseClient,
+  userId: string,
+  logDate: string,
+  dayType: string,
+  fields: { gym_completed?: boolean }
+): Promise<void> {
+  const { error } = await supabase.from('daily_logs').upsert(
+    { user_id: userId, log_date: logDate, day_type: dayType, ...fields },
     { onConflict: 'user_id,log_date' }
   )
+  if (error) console.error('[WorkoutView] daily_logs upsert failed:', error)
 }
 
 // ─── Single set row ───────────────────────────────────────────────────────────
@@ -346,109 +349,123 @@ export default function WorkoutView({
   dayType,
   initialSetLogs,
 }: WorkoutViewProps) {
+  // Stable Supabase client — created once, not on every action
+  const supabase = useRef(createClient()).current
+
   const [logs, setLogs] = useState<ExerciseLog[]>(() =>
     buildInitialLogs(exercises, initialSetLogs)
   )
+  const [saveError, setSaveError] = useState<string | null>(null)
 
-  // Check if all sets + cardio are done → auto-save gym_completed
-  const checkAllDone = useCallback(
-    async (updatedLogs: ExerciseLog[]) => {
-      const strengthDone = updatedLogs.every((l, i) =>
-        exercises[i]?.type === 'strength'
-          ? l.sets.every((s) => s.completed)
-          : true
-      )
-      const cardioDone = updatedLogs.every((l, i) =>
-        exercises[i]?.type === 'cardio' ? l.cardioCompleted : true
-      )
-      if (strengthDone && cardioDone) {
-        await markGymCompleted(userId, logDate, dayType)
-      }
-    },
-    [userId, logDate, dayType, exercises]
-  )
+  // Check if everything is done → mark gym_completed in daily_logs
+  async function checkAllDone(updatedLogs: ExerciseLog[]) {
+    const allStrengthDone = updatedLogs.every((l, i) =>
+      exercises[i]?.type === 'strength' ? l.sets.every((s) => s.completed) : true
+    )
+    const allCardioDone = updatedLogs.every((l, i) =>
+      exercises[i]?.type === 'cardio' ? l.cardioCompleted : true
+    )
+    if (allStrengthDone && allCardioDone) {
+      await upsertDailyLog(supabase, userId, logDate, dayType, { gym_completed: true })
+    }
+  }
 
   async function toggleSet(exIndex: number, setIndex: number) {
-    let updatedLogs: ExerciseLog[] = []
-    setLogs((prev) => {
-      updatedLogs = prev.map((log, i) => {
-        if (i !== exIndex) return log
-        const sets = log.sets.map((s, si) =>
+    const ex = exercises[exIndex]
+    const prevSet = logs[exIndex].sets[setIndex]
+
+    // Compute new values BEFORE calling setState
+    const newCompleted = !prevSet.completed
+    const newWeight = (prevSet.actualWeight ?? ex.weight) ?? null
+    const newReps = prevSet.actualReps ?? (Number((ex.reps ?? '').split('-')[0]) || null)
+
+    const newLogs = logs.map((log, i) => {
+      if (i !== exIndex) return log
+      return {
+        ...log,
+        sets: log.sets.map((s, si) =>
           si === setIndex
-            ? {
-                ...s,
-                completed: !s.completed,
-                actualWeight: (s.actualWeight ?? exercises[i].weight) ?? null,
-                actualReps: (s.actualReps ?? (Number((exercises[i].reps ?? '').split('-')[0]) || null)),
-              }
+            ? { completed: newCompleted, actualWeight: newWeight, actualReps: newReps }
             : s
-        )
-        return { ...log, sets }
-      })
-      return updatedLogs
+        ),
+      }
     })
 
-    const ex = exercises[exIndex]
-    const newSet = updatedLogs[exIndex]?.sets[setIndex]
-    if (ex && newSet) {
-      await upsertSetLog(userId, logDate, {
-        exercise_id: ex.id,
-        set_index: setIndex,
-        completed: newSet.completed,
-        actual_weight: newSet.actualWeight,
-        actual_reps: newSet.actualReps,
-      })
-      await checkAllDone(updatedLogs)
+    setLogs(newLogs)
+
+    const err = await upsertSetLog(supabase, userId, logDate, {
+      exercise_id: ex.id,
+      set_index: setIndex,
+      completed: newCompleted,
+      actual_weight: newWeight,
+      actual_reps: newReps,
+    })
+
+    if (err) {
+      setSaveError(err)
+      setLogs(logs) // revert on failure
+    } else {
+      setSaveError(null)
+      await checkAllDone(newLogs)
     }
   }
 
   async function updateSet(exIndex: number, setIndex: number, weight: number | null, reps: number | null) {
-    let updatedLogs: ExerciseLog[] = []
-    setLogs((prev) => {
-      updatedLogs = prev.map((log, i) => {
-        if (i !== exIndex) return log
-        const sets = log.sets.map((s, si) =>
-          si === setIndex
-            ? { completed: true, actualWeight: weight, actualReps: reps }
-            : s
-        )
-        return { ...log, sets }
-      })
-      return updatedLogs
+    const ex = exercises[exIndex]
+
+    const newLogs = logs.map((log, i) => {
+      if (i !== exIndex) return log
+      return {
+        ...log,
+        sets: log.sets.map((s, si) =>
+          si === setIndex ? { completed: true, actualWeight: weight, actualReps: reps } : s
+        ),
+      }
     })
 
-    const ex = exercises[exIndex]
-    if (ex) {
-      await upsertSetLog(userId, logDate, {
-        exercise_id: ex.id,
-        set_index: setIndex,
-        completed: true,
-        actual_weight: weight,
-        actual_reps: reps,
-      })
-      await checkAllDone(updatedLogs)
+    setLogs(newLogs)
+
+    const err = await upsertSetLog(supabase, userId, logDate, {
+      exercise_id: ex.id,
+      set_index: setIndex,
+      completed: true,
+      actual_weight: weight,
+      actual_reps: reps,
+    })
+
+    if (err) {
+      setSaveError(err)
+      setLogs(logs)
+    } else {
+      setSaveError(null)
+      await checkAllDone(newLogs)
     }
   }
 
   async function completeCardio(exIndex: number) {
-    let updatedLogs: ExerciseLog[] = []
-    setLogs((prev) => {
-      updatedLogs = prev.map((log, i) =>
-        i === exIndex ? { ...log, cardioCompleted: !log.cardioCompleted } : log
-      )
-      return updatedLogs
+    const ex = exercises[exIndex]
+    const newCompleted = !logs[exIndex].cardioCompleted
+
+    const newLogs = logs.map((log, i) =>
+      i === exIndex ? { ...log, cardioCompleted: newCompleted } : log
+    )
+
+    setLogs(newLogs)
+
+    const err = await upsertSetLog(supabase, userId, logDate, {
+      exercise_id: ex.id,
+      set_index: -1,
+      completed: newCompleted,
+      actual_weight: null,
+      actual_reps: null,
     })
 
-    const ex = exercises[exIndex]
-    if (ex) {
-      await upsertSetLog(userId, logDate, {
-        exercise_id: ex.id,
-        set_index: -1,
-        completed: updatedLogs[exIndex]?.cardioCompleted ?? false,
-        actual_weight: null,
-        actual_reps: null,
-      })
-      await checkAllDone(updatedLogs)
+    if (err) {
+      setSaveError(err)
+      setLogs(logs)
+    } else {
+      setSaveError(null)
+      await checkAllDone(newLogs)
     }
   }
 
@@ -463,6 +480,13 @@ export default function WorkoutView({
 
   return (
     <div className="space-y-4">
+      {/* Save error banner */}
+      {saveError && (
+        <div className="px-4 py-3 rounded-xl bg-red-900/40 border border-red-700 text-red-300 text-sm">
+          ⚠ Save failed: {saveError}
+        </div>
+      )}
+
       {/* Progress banner */}
       {totalSets > 0 && (
         <div
