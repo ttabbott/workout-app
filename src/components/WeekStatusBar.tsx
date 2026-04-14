@@ -1,6 +1,3 @@
-'use client'
-
-import { useRouter } from 'next/navigation'
 import { WorkoutKey } from '@/lib/types'
 import { WORKOUT_ORDER } from '@/lib/workout-data'
 
@@ -18,21 +15,10 @@ const WORKOUT_SHORT: Record<WorkoutKey, string> = {
 }
 
 export default function WeekStatusBar({ completedKeys, suggestedKey, activeKey }: WeekStatusBarProps) {
-  const router = useRouter()
   const allDone = suggestedKey === 'filler'
 
-  function handlePick(key: WorkoutKey) {
-    if (completedKeys.has(key)) return
-    // If tapping the natural suggestion, clear the override
-    if (key === suggestedKey) {
-      router.push('/')
-    } else {
-      router.push(`/?workout=${key}`)
-    }
-  }
-
   return (
-    <div className="bg-gray-900 rounded-2xl border border-gray-800 px-4 py-3 mb-5">
+    <div className="bg-gray-900 rounded-2xl border border-gray-800 px-4 py-3 mb-3">
       <p className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-2.5">
         This Week
       </p>
@@ -40,20 +26,14 @@ export default function WeekStatusBar({ completedKeys, suggestedKey, activeKey }
         {WORKOUT_ORDER.map((key) => {
           const isDone = completedKeys.has(key)
           const isActive = activeKey === key
-          const isClickable = !isDone && !allDone
-
           return (
-            <button
+            <div
               key={key}
-              onClick={() => handlePick(key)}
-              disabled={isDone || allDone}
               className={`rounded-xl px-2 py-2.5 text-center transition-all ${
                 isDone
-                  ? 'bg-emerald-950/60 border border-emerald-700/50 cursor-default'
+                  ? 'bg-emerald-950/60 border border-emerald-700/50'
                   : isActive
                   ? 'bg-orange-950/60 border border-orange-600/60'
-                  : isClickable
-                  ? 'bg-gray-800/60 border border-gray-700/50 hover:bg-gray-700/60 hover:border-gray-600/60 active:scale-95'
                   : 'bg-gray-800/60 border border-gray-700/50'
               }`}
             >
@@ -71,7 +51,7 @@ export default function WeekStatusBar({ completedKeys, suggestedKey, activeKey }
               >
                 {WORKOUT_SHORT[key]}
               </div>
-            </button>
+            </div>
           )
         })}
       </div>

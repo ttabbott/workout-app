@@ -18,6 +18,7 @@ import FillerCardioView from '@/components/FillerCardioView'
 import YogaCheckIn from '@/components/YogaCheckIn'
 import GeneratePlanButton from '@/components/GeneratePlanButton'
 import WeeklyNotes from '@/components/WeeklyNotes'
+import WorkoutPicker from '@/components/WorkoutPicker'
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 const MONTH_NAMES = [
@@ -135,6 +136,11 @@ export default async function HomePage({
   const yogaStreak = calcYogaStreak(allLogs)
   const weekly = calcWeeklyCompletion(weekLogs)
 
+  // ── Workout picker options (uncompleted, excluding the active one) ──────────
+  const pickerOptions = isFiller ? [] : (['A', 'B', 'C', 'D'] as WorkoutKey[])
+    .filter((k) => !completedKeys.has(k) && k !== activeKey)
+    .map((k) => ({ key: k, label: (aiWorkouts?.[k] ?? WORKOUTS[k]).label }))
+
   // ── Labels ────────────────────────────────────────────────────────────────
   const dateLabel = `${DAY_NAMES[now.getDay()]}, ${MONTH_NAMES[now.getMonth()]} ${now.getDate()}`
   const workoutBadge = isFiller
@@ -176,10 +182,19 @@ export default async function HomePage({
         {/* Week A/B/C/D status */}
         <WeekStatusBar completedKeys={completedKeys} suggestedKey={suggestedKey} activeKey={activeKey} />
 
+        {/* Change workout picker */}
+        {!isFiller && pickerOptions.length > 0 && (
+          <WorkoutPicker
+            activeKey={activeKey as WorkoutKey}
+            suggestedKey={suggestedKey as WorkoutKey}
+            options={pickerOptions}
+          />
+        )}
+
         {/* AI plan generation banner — shown if no plan yet and not filler */}
         {!isFiller && !hasPlan && <GeneratePlanButton />}
 
-        {/* Today's workout */}
+        {/* Today's workout — key forces remount when workout changes */}
         {isFiller ? (
           <FillerCardioView
             exercises={todayWorkout.exercises}
@@ -188,6 +203,7 @@ export default async function HomePage({
           />
         ) : (
           <WorkoutView
+            key={activeKey}
             exercises={todayWorkout.exercises}
             workoutLabel={todayWorkout.label}
             userId={user.id}
