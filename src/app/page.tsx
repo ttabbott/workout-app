@@ -25,7 +25,11 @@ const MONTH_NAMES = [
   'July', 'August', 'September', 'October', 'November', 'December',
 ]
 
-export default async function HomePage() {
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ workout?: string }>
+}) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -33,6 +37,8 @@ export default async function HomePage() {
   const now = new Date()
   const logDate = now.toISOString().slice(0, 10)
   const weekStart = getWeekStart()
+
+  const { workout: workoutParam } = await searchParams
 
   // ── Fetch last 60 days of daily logs ──────────────────────────────────────
   const sixtyDaysAgo = new Date(now)
@@ -50,7 +56,15 @@ export default async function HomePage() {
   // ── Determine today's workout ─────────────────────────────────────────────
   const suggestedKey = getSuggestedWorkout(weekLogs)
   const completedKeys = getCompletedWorkoutKeys(weekLogs)
-  const isFiller = suggestedKey === 'filler'
+
+  // Allow overriding the suggested workout via ?workout=B (only uncompleted keys)
+  const VALID_KEYS: WorkoutKey[] = ['A', 'B', 'C', 'D']
+  const pickedKey = workoutParam && VALID_KEYS.includes(workoutParam as WorkoutKey) && !completedKeys.has(workoutParam as WorkoutKey)
+    ? workoutParam as WorkoutKey
+    : null
+  const activeKey = pickedKey ?? suggestedKey
+
+  const isFiller = activeKey === 'filler'
 
   // ── Load this week's AI-generated plan (if available) ────────────────────
   let hasPlan = false
@@ -80,7 +94,7 @@ export default async function HomePage() {
   // Use AI plan if available, otherwise fall back to baseline
   const todayWorkout: DayWorkout = isFiller
     ? FILLER_CARDIO
-    : (aiWorkouts?.[suggestedKey as WorkoutKey] ?? WORKOUTS[suggestedKey as WorkoutKey])
+    : (aiWorkouts?.[activeKey as WorkoutKey] ?? WORKOUTS[activeKey as WorkoutKey])
 
   // ── Fetch today's set logs ────────────────────────────────────────────────
   const { data: rawSetLogs } = await supabase
@@ -125,7 +139,7 @@ export default async function HomePage() {
   const dateLabel = `${DAY_NAMES[now.getDay()]}, ${MONTH_NAMES[now.getMonth()]} ${now.getDate()}`
   const workoutBadge = isFiller
     ? 'Bonus Cardio 🏃'
-    : `Workout ${suggestedKey} 💪`
+    : `Workout ${activeKey} 💪`
   const badgeClass = isFiller
     ? 'bg-blue-900/50 text-blue-300 border-blue-800/60'
     : 'bg-orange-900/50 text-orange-300 border-orange-800/60'
@@ -160,7 +174,7 @@ export default async function HomePage() {
         />
 
         {/* Week A/B/C/D status */}
-        <WeekStatusBar completedKeys={completedKeys} suggestedKey={suggestedKey} />
+        <WeekStatusBar completedKeys={completedKeys} suggestedKey={suggestedKey} activeKey={activeKey} />
 
         {/* AI plan generation banner — shown if no plan yet and not filler */}
         {!isFiller && !hasPlan && <GeneratePlanButton />}
@@ -179,7 +193,7 @@ export default async function HomePage() {
             userId={user.id}
             logDate={logDate}
             dayType="gym"
-            workoutKey={suggestedKey as WorkoutKey}
+            workoutKey={activeKey as WorkoutKey}
             initialSetLogs={initialSetLogs}
             weekStart={weekStart}
           />

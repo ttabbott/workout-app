@@ -1,9 +1,13 @@
+'use client'
+
+import { useRouter } from 'next/navigation'
 import { WorkoutKey } from '@/lib/types'
-import { WORKOUTS, WORKOUT_ORDER } from '@/lib/workout-data'
+import { WORKOUT_ORDER } from '@/lib/workout-data'
 
 interface WeekStatusBarProps {
   completedKeys: Set<WorkoutKey>
   suggestedKey: WorkoutKey | 'filler'
+  activeKey: WorkoutKey | 'filler'
 }
 
 const WORKOUT_SHORT: Record<WorkoutKey, string> = {
@@ -13,8 +17,19 @@ const WORKOUT_SHORT: Record<WorkoutKey, string> = {
   D: 'Shoulders',
 }
 
-export default function WeekStatusBar({ completedKeys, suggestedKey }: WeekStatusBarProps) {
+export default function WeekStatusBar({ completedKeys, suggestedKey, activeKey }: WeekStatusBarProps) {
+  const router = useRouter()
   const allDone = suggestedKey === 'filler'
+
+  function handlePick(key: WorkoutKey) {
+    if (completedKeys.has(key)) return
+    // If tapping the natural suggestion, clear the override
+    if (key === suggestedKey) {
+      router.push('/')
+    } else {
+      router.push(`/?workout=${key}`)
+    }
+  }
 
   return (
     <div className="bg-gray-900 rounded-2xl border border-gray-800 px-4 py-3 mb-5">
@@ -24,33 +39,39 @@ export default function WeekStatusBar({ completedKeys, suggestedKey }: WeekStatu
       <div className="grid grid-cols-4 gap-2">
         {WORKOUT_ORDER.map((key) => {
           const isDone = completedKeys.has(key)
-          const isCurrent = suggestedKey === key
+          const isActive = activeKey === key
+          const isClickable = !isDone && !allDone
+
           return (
-            <div
+            <button
               key={key}
+              onClick={() => handlePick(key)}
+              disabled={isDone || allDone}
               className={`rounded-xl px-2 py-2.5 text-center transition-all ${
                 isDone
-                  ? 'bg-emerald-950/60 border border-emerald-700/50'
-                  : isCurrent
+                  ? 'bg-emerald-950/60 border border-emerald-700/50 cursor-default'
+                  : isActive
                   ? 'bg-orange-950/60 border border-orange-600/60'
+                  : isClickable
+                  ? 'bg-gray-800/60 border border-gray-700/50 hover:bg-gray-700/60 hover:border-gray-600/60 active:scale-95'
                   : 'bg-gray-800/60 border border-gray-700/50'
               }`}
             >
               <div
                 className={`text-xs font-bold mb-0.5 ${
-                  isDone ? 'text-emerald-400' : isCurrent ? 'text-orange-300' : 'text-gray-500'
+                  isDone ? 'text-emerald-400' : isActive ? 'text-orange-300' : 'text-gray-500'
                 }`}
               >
                 {isDone ? '✓' : key}
               </div>
               <div
                 className={`text-xs leading-tight ${
-                  isDone ? 'text-emerald-500/70' : isCurrent ? 'text-orange-200' : 'text-gray-600'
+                  isDone ? 'text-emerald-500/70' : isActive ? 'text-orange-200' : 'text-gray-600'
                 }`}
               >
                 {WORKOUT_SHORT[key]}
               </div>
-            </div>
+            </button>
           )
         })}
       </div>
