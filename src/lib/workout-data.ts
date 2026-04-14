@@ -1,319 +1,352 @@
-import { DayWorkout } from './types'
+import { DayWorkout, WorkoutKey } from './types'
 
-// Sample week plan — day 0=Sunday through 6=Saturday
-// Gym days: Monday(1), Tuesday(2), Thursday(4), Friday(5)
-// Yoga/rest: Sunday(0), Wednesday(3), Saturday(6)
+// ─── Workout A — Push (Chest / Shoulders / Triceps) ──────────────────────────
 
-export const SAMPLE_WEEK: DayWorkout[] = [
-  // Sunday — yoga
-  {
-    dayOfWeek: 0,
-    label: 'Rest & Yoga',
-    type: 'yoga',
-    exercises: [],
-  },
-
-  // Monday — Push (Chest / Shoulders / Triceps) + Cardio
-  {
-    dayOfWeek: 1,
-    label: 'Push Day — Chest, Shoulders & Triceps',
-    type: 'gym',
-    exercises: [
-      {
-        id: 'ex-barbell-bench',
-        name: 'Barbell Bench Press',
-        type: 'strength',
-        sets: 4,
-        reps: '8',
-        weight: 135,
-        unit: 'lbs',
-      },
-      {
-        id: 'ex-incline-db',
-        name: 'Incline Dumbbell Press',
-        type: 'strength',
-        sets: 3,
-        reps: '10',
-        weight: 50,
-        unit: 'lbs',
-      },
-      {
-        id: 'ex-cable-fly',
-        name: 'Cable Chest Fly',
-        type: 'strength',
-        sets: 3,
-        reps: '12-15',
-        weight: 25,
-        unit: 'lbs',
-        youtubeUrl: 'https://www.youtube.com/results?search_query=cable+chest+fly+form',
-      },
-      {
-        id: 'ex-ohp',
-        name: 'Overhead Press (Barbell)',
-        type: 'strength',
-        sets: 3,
-        reps: '8',
-        weight: 85,
-        unit: 'lbs',
-      },
-      {
-        id: 'ex-lateral-raise',
-        name: 'Lateral Raises',
-        type: 'strength',
-        sets: 3,
-        reps: '15',
-        weight: 15,
-        unit: 'lbs',
-      },
-      {
-        id: 'ex-tricep-pushdown',
-        name: 'Tricep Cable Pushdown',
-        type: 'strength',
-        sets: 3,
-        reps: '12',
-        weight: 40,
-        unit: 'lbs',
-        youtubeUrl: 'https://www.youtube.com/results?search_query=tricep+cable+pushdown+form',
-      },
-      {
-        id: 'ex-treadmill-mon',
-        name: 'Treadmill Incline Walk',
-        type: 'cardio',
-        duration: 20,
-        intensity: 'Moderate (incline 10, speed 3.5)',
-      },
-    ],
-  },
-
-  // Tuesday — Pull (Back / Biceps)
-  {
-    dayOfWeek: 2,
-    label: 'Pull Day — Back & Biceps',
-    type: 'gym',
-    exercises: [
-      {
-        id: 'ex-deadlift',
-        name: 'Romanian Deadlift',
-        type: 'strength',
-        sets: 4,
-        reps: '8',
-        weight: 185,
-        unit: 'lbs',
-      },
-      {
-        id: 'ex-pullup',
-        name: 'Pull-Ups',
-        type: 'strength',
-        sets: 3,
-        reps: '8-10',
-        unit: 'bodyweight',
-        notes: 'Add weight if 10 reps feel easy',
-      },
-      {
-        id: 'ex-seated-row',
-        name: 'Seated Cable Row',
-        type: 'strength',
-        sets: 3,
-        reps: '10',
-        weight: 120,
-        unit: 'lbs',
-      },
-      {
-        id: 'ex-lat-pulldown',
-        name: 'Lat Pulldown',
-        type: 'strength',
-        sets: 3,
-        reps: '12',
-        weight: 110,
-        unit: 'lbs',
-      },
-      {
-        id: 'ex-barbell-curl',
-        name: 'Barbell Bicep Curl',
-        type: 'strength',
-        sets: 3,
-        reps: '10',
-        weight: 65,
-        unit: 'lbs',
-      },
-      {
-        id: 'ex-hammer-curl',
-        name: 'Hammer Curl',
-        type: 'strength',
-        sets: 3,
-        reps: '12',
-        weight: 30,
-        unit: 'lbs',
-      },
-    ],
-  },
-
-  // Wednesday — yoga/rest
-  {
-    dayOfWeek: 3,
-    label: 'Rest & Yoga',
-    type: 'yoga',
-    exercises: [],
-  },
-
-  // Thursday — Legs + Cardio
-  {
-    dayOfWeek: 4,
-    label: 'Leg Day — Quads, Hamstrings & Glutes',
-    type: 'gym',
-    exercises: [
-      {
-        id: 'ex-squat',
-        name: 'Barbell Back Squat',
-        type: 'strength',
-        sets: 4,
-        reps: '8',
-        weight: 185,
-        unit: 'lbs',
-      },
-      {
-        id: 'ex-leg-press',
-        name: 'Leg Press',
-        type: 'strength',
-        sets: 3,
-        reps: '10-12',
-        weight: 270,
-        unit: 'lbs',
-      },
-      {
-        id: 'ex-lunge',
-        name: 'Walking Lunges',
-        type: 'strength',
-        sets: 3,
-        reps: '12 each leg',
-        weight: 40,
-        unit: 'lbs',
-        youtubeUrl: 'https://www.youtube.com/results?search_query=walking+lunges+dumbbell+form',
-      },
-      {
-        id: 'ex-leg-curl',
-        name: 'Lying Leg Curl',
-        type: 'strength',
-        sets: 3,
-        reps: '12',
-        weight: 80,
-        unit: 'lbs',
-      },
-      {
-        id: 'ex-calf-raise',
-        name: 'Standing Calf Raise',
-        type: 'strength',
-        sets: 4,
-        reps: '15',
-        weight: 180,
-        unit: 'lbs',
-      },
-      {
-        id: 'ex-bike-thu',
-        name: 'Stationary Bike',
-        type: 'cardio',
-        duration: 15,
-        intensity: 'High (interval: 30s sprint / 90s easy)',
-        youtubeUrl: 'https://www.youtube.com/results?search_query=stationary+bike+HIIT+workout',
-      },
-    ],
-  },
-
-  // Friday — Shoulders + Core
-  {
-    dayOfWeek: 5,
-    label: 'Shoulders & Core',
-    type: 'gym',
-    exercises: [
-      {
-        id: 'ex-db-shoulder-press',
-        name: 'Dumbbell Shoulder Press',
-        type: 'strength',
-        sets: 4,
-        reps: '10',
-        weight: 45,
-        unit: 'lbs',
-      },
-      {
-        id: 'ex-arnold-press',
-        name: 'Arnold Press',
-        type: 'strength',
-        sets: 3,
-        reps: '12',
-        weight: 35,
-        unit: 'lbs',
-        youtubeUrl: 'https://www.youtube.com/results?search_query=arnold+press+form+tutorial',
-      },
-      {
-        id: 'ex-face-pull',
-        name: 'Face Pull',
-        type: 'strength',
-        sets: 3,
-        reps: '15',
-        weight: 30,
-        unit: 'lbs',
-        youtubeUrl: 'https://www.youtube.com/results?search_query=face+pull+cable+form',
-      },
-      {
-        id: 'ex-front-raise',
-        name: 'Dumbbell Front Raise',
-        type: 'strength',
-        sets: 3,
-        reps: '12',
-        weight: 20,
-        unit: 'lbs',
-      },
-      {
-        id: 'ex-plank',
-        name: 'Plank',
-        type: 'strength',
-        sets: 3,
-        reps: '45–60s hold',
-        unit: 'bodyweight',
-      },
-      {
-        id: 'ex-cable-crunch',
-        name: 'Cable Crunch',
-        type: 'strength',
-        sets: 3,
-        reps: '15',
-        weight: 50,
-        unit: 'lbs',
-        youtubeUrl: 'https://www.youtube.com/results?search_query=cable+crunch+form',
-      },
-      {
-        id: 'ex-russian-twist',
-        name: 'Russian Twist',
-        type: 'strength',
-        sets: 3,
-        reps: '20 total',
-        weight: 25,
-        unit: 'lbs',
-        youtubeUrl: 'https://www.youtube.com/results?search_query=weighted+russian+twist+form',
-      },
-    ],
-  },
-
-  // Saturday — yoga/rest
-  {
-    dayOfWeek: 6,
-    label: 'Rest & Yoga',
-    type: 'yoga',
-    exercises: [],
-  },
-]
-
-export function getTodayWorkout(): DayWorkout {
-  const dayOfWeek = new Date().getDay()
-  return SAMPLE_WEEK.find((d) => d.dayOfWeek === dayOfWeek) ?? SAMPLE_WEEK[0]
+const WORKOUT_A: DayWorkout = {
+  key: 'A',
+  label: 'Push — Chest, Shoulders & Triceps',
+  type: 'gym',
+  exercises: [
+    {
+      id: 'a-bench-press',
+      name: 'Barbell Bench Press',
+      type: 'strength',
+      setDetails: [
+        { weight: 95,  reps: '10', note: 'warm-up' },
+        { weight: 115, reps: '8',  note: 'working' },
+        { weight: 135, reps: '6',  note: 'working' },
+        { weight: 145, reps: '4',  note: 'top set' },
+      ],
+    },
+    {
+      id: 'a-incline-db',
+      name: 'Incline Dumbbell Press',
+      type: 'strength',
+      setDetails: [
+        { weight: 40, reps: '12' },
+        { weight: 50, reps: '10' },
+        { weight: 55, reps: '8'  },
+        { weight: 55, reps: '8'  },
+      ],
+    },
+    {
+      id: 'a-cable-fly',
+      name: 'Cable Chest Fly',
+      type: 'strength',
+      setDetails: [
+        { weight: 20, reps: '15' },
+        { weight: 25, reps: '12' },
+        { weight: 25, reps: '12' },
+      ],
+      youtubeUrl: 'https://www.youtube.com/results?search_query=cable+chest+fly+form',
+    },
+    {
+      id: 'a-ohp',
+      name: 'Overhead Press (Barbell)',
+      type: 'strength',
+      setDetails: [
+        { weight: 65, reps: '10', note: 'warm-up' },
+        { weight: 75, reps: '8'  },
+        { weight: 85, reps: '6'  },
+        { weight: 85, reps: '6'  },
+      ],
+    },
+    {
+      id: 'a-lateral-raise',
+      name: 'Lateral Raises',
+      type: 'strength',
+      setDetails: [
+        { weight: 12, reps: '15' },
+        { weight: 15, reps: '12' },
+        { weight: 15, reps: '12' },
+      ],
+    },
+    {
+      id: 'a-tricep-pushdown',
+      name: 'Tricep Cable Pushdown',
+      type: 'strength',
+      setDetails: [
+        { weight: 35, reps: '12' },
+        { weight: 40, reps: '10' },
+        { weight: 40, reps: '10' },
+      ],
+      youtubeUrl: 'https://www.youtube.com/results?search_query=tricep+cable+pushdown+form',
+    },
+    {
+      id: 'a-cardio',
+      name: 'Treadmill Incline Walk',
+      type: 'cardio',
+      duration: 20,
+      intensity: 'Moderate (incline 10, speed 3.5)',
+    },
+  ],
 }
 
-export function getWeeklyStats() {
-  // Hardcoded sample stats for Phase 1
-  return {
-    yogaStreak: 5,
-    weeklyCompletionPercent: 60,
-    completedDays: 3,
-    totalDays: 5,
-  }
+// ─── Workout B — Pull (Back / Biceps) ────────────────────────────────────────
+
+const WORKOUT_B: DayWorkout = {
+  key: 'B',
+  label: 'Pull — Back & Biceps',
+  type: 'gym',
+  exercises: [
+    {
+      id: 'b-rdl',
+      name: 'Romanian Deadlift',
+      type: 'strength',
+      setDetails: [
+        { weight: 135, reps: '10', note: 'warm-up' },
+        { weight: 165, reps: '8'  },
+        { weight: 185, reps: '6'  },
+        { weight: 205, reps: '4',  note: 'top set' },
+      ],
+    },
+    {
+      id: 'b-pullup',
+      name: 'Pull-Ups',
+      type: 'strength',
+      setDetails: [
+        { unit: 'bodyweight', reps: '8' },
+        { unit: 'bodyweight', reps: '8' },
+        { unit: 'bodyweight', reps: '8' },
+      ],
+      notes: 'Add weight if 8 reps feel easy',
+    },
+    {
+      id: 'b-seated-row',
+      name: 'Seated Cable Row',
+      type: 'strength',
+      setDetails: [
+        { weight: 100, reps: '12' },
+        { weight: 120, reps: '10' },
+        { weight: 130, reps: '8'  },
+      ],
+    },
+    {
+      id: 'b-lat-pulldown',
+      name: 'Lat Pulldown',
+      type: 'strength',
+      setDetails: [
+        { weight: 90,  reps: '12' },
+        { weight: 110, reps: '10' },
+        { weight: 120, reps: '8'  },
+      ],
+    },
+    {
+      id: 'b-bb-curl',
+      name: 'Barbell Bicep Curl',
+      type: 'strength',
+      setDetails: [
+        { weight: 55, reps: '10' },
+        { weight: 65, reps: '8'  },
+        { weight: 75, reps: '6'  },
+      ],
+    },
+    {
+      id: 'b-hammer-curl',
+      name: 'Hammer Curl',
+      type: 'strength',
+      setDetails: [
+        { weight: 25, reps: '12' },
+        { weight: 30, reps: '12' },
+        { weight: 30, reps: '10' },
+      ],
+    },
+  ],
 }
+
+// ─── Workout C — Legs ─────────────────────────────────────────────────────────
+
+const WORKOUT_C: DayWorkout = {
+  key: 'C',
+  label: 'Legs — Quads, Hamstrings & Glutes',
+  type: 'gym',
+  exercises: [
+    {
+      id: 'c-squat',
+      name: 'Barbell Back Squat',
+      type: 'strength',
+      setDetails: [
+        { weight: 135, reps: '10', note: 'warm-up' },
+        { weight: 165, reps: '8'  },
+        { weight: 185, reps: '6'  },
+        { weight: 205, reps: '4',  note: 'top set' },
+      ],
+    },
+    {
+      id: 'c-leg-press',
+      name: 'Leg Press',
+      type: 'strength',
+      setDetails: [
+        { weight: 225, reps: '12' },
+        { weight: 270, reps: '10' },
+        { weight: 315, reps: '8'  },
+      ],
+    },
+    {
+      id: 'c-lunge',
+      name: 'Walking Lunges',
+      type: 'strength',
+      setDetails: [
+        { weight: 35, reps: '12 each' },
+        { weight: 40, reps: '12 each' },
+        { weight: 45, reps: '10 each' },
+      ],
+      youtubeUrl: 'https://www.youtube.com/results?search_query=walking+lunges+dumbbell+form',
+    },
+    {
+      id: 'c-leg-curl',
+      name: 'Lying Leg Curl',
+      type: 'strength',
+      setDetails: [
+        { weight: 65, reps: '12' },
+        { weight: 80, reps: '10' },
+        { weight: 90, reps: '8'  },
+      ],
+    },
+    {
+      id: 'c-calf-raise',
+      name: 'Standing Calf Raise',
+      type: 'strength',
+      setDetails: [
+        { weight: 135, reps: '20' },
+        { weight: 180, reps: '15' },
+        { weight: 205, reps: '12' },
+        { weight: 205, reps: '12' },
+      ],
+    },
+    {
+      id: 'c-cardio',
+      name: 'Stationary Bike HIIT',
+      type: 'cardio',
+      duration: 15,
+      intensity: 'High (30s sprint / 90s easy × 6 rounds)',
+      youtubeUrl: 'https://www.youtube.com/results?search_query=stationary+bike+HIIT+workout',
+    },
+  ],
+}
+
+// ─── Workout D — Shoulders / Core ────────────────────────────────────────────
+
+const WORKOUT_D: DayWorkout = {
+  key: 'D',
+  label: 'Shoulders & Core',
+  type: 'gym',
+  exercises: [
+    {
+      id: 'd-db-shoulder-press',
+      name: 'Dumbbell Shoulder Press',
+      type: 'strength',
+      setDetails: [
+        { weight: 35, reps: '12', note: 'warm-up' },
+        { weight: 45, reps: '10' },
+        { weight: 50, reps: '8'  },
+        { weight: 55, reps: '6',  note: 'top set' },
+      ],
+    },
+    {
+      id: 'd-arnold-press',
+      name: 'Arnold Press',
+      type: 'strength',
+      setDetails: [
+        { weight: 30, reps: '12' },
+        { weight: 35, reps: '10' },
+        { weight: 40, reps: '8'  },
+      ],
+      youtubeUrl: 'https://www.youtube.com/results?search_query=arnold+press+form+tutorial',
+    },
+    {
+      id: 'd-face-pull',
+      name: 'Face Pull',
+      type: 'strength',
+      setDetails: [
+        { weight: 25, reps: '15' },
+        { weight: 30, reps: '15' },
+        { weight: 35, reps: '12' },
+      ],
+      youtubeUrl: 'https://www.youtube.com/results?search_query=face+pull+cable+form',
+    },
+    {
+      id: 'd-front-raise',
+      name: 'Dumbbell Front Raise',
+      type: 'strength',
+      setDetails: [
+        { weight: 15, reps: '12' },
+        { weight: 20, reps: '12' },
+        { weight: 20, reps: '10' },
+      ],
+    },
+    {
+      id: 'd-plank',
+      name: 'Plank',
+      type: 'strength',
+      setDetails: [
+        { unit: 'bodyweight', reps: '45s' },
+        { unit: 'bodyweight', reps: '60s' },
+        { unit: 'bodyweight', reps: '60s' },
+      ],
+    },
+    {
+      id: 'd-cable-crunch',
+      name: 'Cable Crunch',
+      type: 'strength',
+      setDetails: [
+        { weight: 40, reps: '15' },
+        { weight: 50, reps: '15' },
+        { weight: 55, reps: '12' },
+      ],
+      youtubeUrl: 'https://www.youtube.com/results?search_query=cable+crunch+form',
+    },
+    {
+      id: 'd-russian-twist',
+      name: 'Russian Twist',
+      type: 'strength',
+      setDetails: [
+        { weight: 20, reps: '20 total' },
+        { weight: 25, reps: '20 total' },
+        { weight: 25, reps: '16 total' },
+      ],
+      youtubeUrl: 'https://www.youtube.com/results?search_query=weighted+russian+twist+form',
+    },
+  ],
+}
+
+// ─── Filler Cardio — shown when all 4 workouts done for the week ──────────────
+
+export const FILLER_CARDIO: DayWorkout = {
+  label: 'Bonus Cardio & Recovery',
+  type: 'filler',
+  exercises: [
+    {
+      id: 'filler-treadmill',
+      name: 'Treadmill Zone 2',
+      type: 'cardio',
+      duration: 30,
+      intensity: 'Low–moderate (incline 8, speed 3.2–3.5) — keep HR 120–140',
+    },
+    {
+      id: 'filler-stairmaster',
+      name: 'Stairmaster',
+      type: 'cardio',
+      duration: 15,
+      intensity: 'Moderate (level 6–8)',
+    },
+    {
+      id: 'filler-stretch',
+      name: 'Full-Body Stretch / Cool Down',
+      type: 'cardio',
+      duration: 10,
+      intensity: 'Easy — focus on hips, quads, hamstrings, shoulders',
+    },
+  ],
+}
+
+// ─── Exports ──────────────────────────────────────────────────────────────────
+
+export const WORKOUTS: Record<WorkoutKey, DayWorkout> = {
+  A: WORKOUT_A,
+  B: WORKOUT_B,
+  C: WORKOUT_C,
+  D: WORKOUT_D,
+}
+
+export const WORKOUT_ORDER: WorkoutKey[] = ['A', 'B', 'C', 'D']

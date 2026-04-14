@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { Exercise, SetLog, ExerciseLog } from '@/lib/types'
+import { Exercise, SetLog, ExerciseLog, WorkoutKey, SetDetail } from '@/lib/types'
 import { createClient } from '@/lib/supabase/client'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
@@ -43,7 +43,7 @@ async function upsertDailyLog(
   userId: string,
   logDate: string,
   dayType: string,
-  fields: { gym_completed?: boolean }
+  fields: { gym_completed?: boolean; workout_key?: WorkoutKey }
 ): Promise<void> {
   const { error } = await supabase.from('daily_logs').upsert(
     { user_id: userId, log_date: logDate, day_type: dayType, ...fields },
@@ -57,33 +57,34 @@ async function upsertDailyLog(
 interface SetRowProps {
   setIndex: number
   exercise: Exercise
+  detail: SetDetail   // per-set prescription
   log: SetLog
   onToggle: () => void
   onUpdate: (weight: number | null, reps: number | null) => void
 }
 
-function SetRow({ setIndex, exercise, log, onToggle, onUpdate }: SetRowProps) {
+function SetRow({ setIndex, exercise, detail, log, onToggle, onUpdate }: SetRowProps) {
+  const isBodyweight = (detail.unit ?? exercise.unit) === 'bodyweight'
   const [editing, setEditing] = useState(false)
   const [editWeight, setEditWeight] = useState<string>(
-    log.actualWeight !== null ? String(log.actualWeight) : String(exercise.weight ?? '')
+    log.actualWeight !== null ? String(log.actualWeight) : String(detail.weight ?? exercise.weight ?? '')
   )
   const [editReps, setEditReps] = useState<string>(
     log.actualReps !== null
       ? String(log.actualReps)
-      : (exercise.reps ?? '').split('-')[0]
+      : detail.reps.split('-')[0].replace(/[^\d]/g, '') || detail.reps
   )
 
   function handleSave() {
-    const w = editWeight !== '' ? Number(editWeight) : null
-    const r = editReps !== '' ? Number(editReps) : null
+    const w = !isBodyweight && editWeight !== '' ? Number(editWeight) : null
+    const r = editReps !== '' ? Number(editReps) || null : null
     onUpdate(w, r)
     setEditing(false)
   }
 
-  const prescribedLabel =
-    exercise.unit === 'bodyweight'
-      ? `Bodyweight × ${exercise.reps}`
-      : `${exercise.weight ?? '—'} lbs × ${exercise.reps}`
+  const prescribedLabel = isBodyweight
+    ? `Bodyweight × ${detail.reps}`
+    : `${detail.weight ?? exercise.weight ?? '—'} lbs × ${detail.reps}`
 
   return (
     <div
@@ -96,7 +97,7 @@ function SetRow({ setIndex, exercise, log, onToggle, onUpdate }: SetRowProps) {
       {editing ? (
         <div className="space-y-2">
           <div className="flex gap-2">
-            {exercise.unit !== 'bodyweight' && (
+            {!isBodyweight && (
               <div className="flex-1">
                 <label className="text-xs text-gray-400 block mb-1">Weight (lbs)</label>
                 <input
@@ -243,6 +244,7 @@ interface ExerciseCardProps {
 function ExerciseCard({ exercise, log, onSetToggle, onSetUpdate, onCardioComplete }: ExerciseCardProps) {
   const completedSets = log.sets.filter((s) => s.completed).length
   const totalSets = log.sets.length
+  const setCount = exercise.setDetails?.length ?? exercise.sets ?? totalSets
 
   return (
     <div className="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden">
@@ -251,8 +253,7 @@ function ExerciseCard({ exercise, log, onSetToggle, onSetUpdate, onCardioComplet
           <h3 className="text-white font-semibold text-base leading-snug">{exercise.name}</h3>
           {exercise.type === 'strength' && (
             <p className="text-gray-500 text-xs mt-0.5">
-              {exercise.sets} sets × {exercise.reps}{' '}
-              {exercise.unit !== 'bodyweight' ? 'reps' : ''}
+              {setCount} sets — progressive loading
             </p>
           )}
           {exercise.notes && (
@@ -286,16 +287,24 @@ function ExerciseCard({ exercise, log, onSetToggle, onSetUpdate, onCardioComplet
 
       <div className="px-4 pb-4 space-y-2">
         {exercise.type === 'strength'
-          ? log.sets.map((setLog, i) => (
-              <SetRow
-                key={i}
-                setIndex={i}
-                exercise={exercise}
-                log={setLog}
-                onToggle={() => onSetToggle(i)}
-                onUpdate={(w, r) => onSetUpdate(i, w, r)}
-              />
-            ))
+          ? log.sets.map((setLog, i) => {
+              const detail = exercise.setDetails?.[i] ?? {
+                weight: exercise.weight,
+                reps: exercise.reps ?? '—',
+                unit: exercise.unit,
+              }
+              return (
+                <SetRow
+                  key={i}
+                  setIndex={i}
+                  exercise={exercise}
+                  detail={detail}
+                  log={setLog}
+                  onToggle={() => onSetToggle(i)}
+                  onUpdate={(w, r) => onSetUpdate(i, w, r)}
+                />
+              )
+            })
           : (
             <CardioBlock exercise={exercise} log={log} onComplete={onCardioComplete} />
           )}
@@ -312,6 +321,7 @@ interface WorkoutViewProps {
   userId: string
   logDate: string           // 'YYYY-MM-DD'
   dayType: string
+  workoutKey?: WorkoutKey   // A/B/C/D — saved on completion
   initialSetLogs: InitialSetLog[]
 }
 
@@ -321,14 +331,11 @@ function buildInitialLogs(exercises: Exercise[], dbLogs: InitialSetLog[]): Exerc
 
     if (ex.type === 'cardio') {
       const cardioLog = exLogs.find((l) => l.set_index === -1)
-      return {
-        exerciseId: ex.id,
-        sets: [],
-        cardioCompleted: cardioLog?.completed ?? false,
-      }
+      return { exerciseId: ex.id, sets: [], cardioCompleted: cardioLog?.completed ?? false }
     }
 
-    const sets: SetLog[] = Array.from({ length: ex.sets ?? 0 }, (_, i) => {
+    const setCount = ex.setDetails?.length ?? ex.sets ?? 0
+    const sets: SetLog[] = Array.from({ length: setCount }, (_, i) => {
       const dbSet = exLogs.find((l) => l.set_index === i)
       return {
         completed: dbSet?.completed ?? false,
@@ -336,7 +343,6 @@ function buildInitialLogs(exercises: Exercise[], dbLogs: InitialSetLog[]): Exerc
         actualReps: dbSet?.actual_reps ?? null,
       }
     })
-
     return { exerciseId: ex.id, sets }
   })
 }
@@ -347,6 +353,7 @@ export default function WorkoutView({
   userId,
   logDate,
   dayType,
+  workoutKey,
   initialSetLogs,
 }: WorkoutViewProps) {
   // Stable Supabase client — created once, not on every action
@@ -357,7 +364,7 @@ export default function WorkoutView({
   )
   const [saveError, setSaveError] = useState<string | null>(null)
 
-  // Check if everything is done → mark gym_completed in daily_logs
+  // Check if everything is done → mark gym_completed + workout_key in daily_logs
   async function checkAllDone(updatedLogs: ExerciseLog[]) {
     const allStrengthDone = updatedLogs.every((l, i) =>
       exercises[i]?.type === 'strength' ? l.sets.every((s) => s.completed) : true
@@ -366,7 +373,10 @@ export default function WorkoutView({
       exercises[i]?.type === 'cardio' ? l.cardioCompleted : true
     )
     if (allStrengthDone && allCardioDone) {
-      await upsertDailyLog(supabase, userId, logDate, dayType, { gym_completed: true })
+      await upsertDailyLog(supabase, userId, logDate, dayType, {
+        gym_completed: true,
+        ...(workoutKey ? { workout_key: workoutKey } : {}),
+      })
     }
   }
 
@@ -375,9 +385,10 @@ export default function WorkoutView({
     const prevSet = logs[exIndex].sets[setIndex]
 
     // Compute new values BEFORE calling setState
+    const detail = ex.setDetails?.[setIndex]
     const newCompleted = !prevSet.completed
-    const newWeight = (prevSet.actualWeight ?? ex.weight) ?? null
-    const newReps = prevSet.actualReps ?? (Number((ex.reps ?? '').split('-')[0]) || null)
+    const newWeight = prevSet.actualWeight ?? detail?.weight ?? ex.weight ?? null
+    const newReps = prevSet.actualReps ?? (Number((detail?.reps ?? ex.reps ?? '').split('-')[0].replace(/[^\d]/g, '')) || null)
 
     const newLogs = logs.map((log, i) => {
       if (i !== exIndex) return log

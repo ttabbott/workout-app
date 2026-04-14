@@ -1,17 +1,29 @@
 export type ExerciseType = 'strength' | 'cardio'
+export type WorkoutKey = 'A' | 'B' | 'C' | 'D'
+export type DayType = 'gym' | 'yoga' | 'filler'
+
+/** Per-set prescription for progressive/pyramid loading */
+export interface SetDetail {
+  weight?: number
+  reps: string              // e.g. "10", "8", "6–8"
+  unit?: 'lbs' | 'kg' | 'bodyweight'
+  note?: string             // e.g. "warm-up", "working", "top set"
+}
 
 export interface Exercise {
   id: string
   name: string
   type: ExerciseType
-  // Strength fields
+  // Per-set prescriptions (used when sets differ in weight/reps)
+  setDetails?: SetDetail[]
+  // Fallback for uniform sets or cardio
   sets?: number
-  reps?: string   // e.g. "8", "8-12", "12-15"
-  weight?: number // lbs
+  reps?: string
+  weight?: number
   unit?: 'lbs' | 'kg' | 'bodyweight'
-  // Cardio fields
-  duration?: number  // minutes
-  intensity?: string // e.g. "Moderate", "High"
+  // Cardio
+  duration?: number
+  intensity?: string
   // Extra
   youtubeUrl?: string
   notes?: string
@@ -26,16 +38,11 @@ export interface SetLog {
 export interface ExerciseLog {
   exerciseId: string
   sets: SetLog[]
-  // cardio
-  actualDuration?: number
-  actualIntensity?: string
   cardioCompleted?: boolean
 }
 
-export type DayType = 'gym' | 'yoga' | 'rest'
-
 export interface DayWorkout {
-  dayOfWeek: number // 0=Sun, 1=Mon, ... 6=Sat
+  key?: WorkoutKey          // A/B/C/D for gym workouts
   label: string
   type: DayType
   exercises: Exercise[]
