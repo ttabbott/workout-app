@@ -1,7 +1,53 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { Exercise, SetLog, ExerciseLog } from '@/lib/types'
+import { createClient } from '@/lib/supabase/client'
+
+// ─── DB helpers ───────────────────────────────────────────────────────────────
+
+interface DbSetLog {
+  exercise_id: string
+  set_index: number   // -1 for cardio
+  completed: boolean
+  actual_weight: number | null
+  actual_reps: number | null
+}
+
+export interface InitialSetLog extends DbSetLog {}
+
+async function upsertSetLog(
+  userId: string,
+  logDate: string,
+  payload: DbSetLog
+) {
+  const supabase = createClient()
+  await supabase.from('set_logs').upsert(
+    {
+      user_id: userId,
+      log_date: logDate,
+      exercise_id: payload.exercise_id,
+      set_index: payload.set_index,
+      completed: payload.completed,
+      actual_weight: payload.actual_weight,
+      actual_reps: payload.actual_reps,
+    },
+    { onConflict: 'user_id,log_date,exercise_id,set_index' }
+  )
+}
+
+async function markGymCompleted(userId: string, logDate: string, dayType: string) {
+  const supabase = createClient()
+  await supabase.from('daily_logs').upsert(
+    {
+      user_id: userId,
+      log_date: logDate,
+      day_type: dayType,
+      gym_completed: true,
+    },
+    { onConflict: 'user_id,log_date' }
+  )
+}
 
 // ─── Single set row ───────────────────────────────────────────────────────────
 
@@ -19,7 +65,9 @@ function SetRow({ setIndex, exercise, log, onToggle, onUpdate }: SetRowProps) {
     log.actualWeight !== null ? String(log.actualWeight) : String(exercise.weight ?? '')
   )
   const [editReps, setEditReps] = useState<string>(
-    log.actualReps !== null ? String(log.actualReps) : (exercise.reps ?? '').split('-')[0]
+    log.actualReps !== null
+      ? String(log.actualReps)
+      : (exercise.reps ?? '').split('-')[0]
   )
 
   function handleSave() {
@@ -85,7 +133,6 @@ function SetRow({ setIndex, exercise, log, onToggle, onUpdate }: SetRowProps) {
         </div>
       ) : (
         <div className="flex items-center gap-3">
-          {/* Set number badge */}
           <div
             className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${
               log.completed ? 'bg-emerald-500 text-white' : 'bg-gray-700 text-gray-400'
@@ -94,7 +141,6 @@ function SetRow({ setIndex, exercise, log, onToggle, onUpdate }: SetRowProps) {
             {log.completed ? '✓' : setIndex + 1}
           </div>
 
-          {/* Prescribed / actual */}
           <div className="flex-1 min-w-0">
             <div className="text-sm text-gray-300">{prescribedLabel}</div>
             {log.completed && (log.actualWeight !== null || log.actualReps !== null) && (
@@ -106,7 +152,6 @@ function SetRow({ setIndex, exercise, log, onToggle, onUpdate }: SetRowProps) {
             )}
           </div>
 
-          {/* Actions */}
           <div className="flex gap-2 flex-shrink-0">
             {!log.completed && (
               <button
@@ -187,24 +232,17 @@ function CardioBlock({ exercise, log, onComplete }: CardioBlockProps) {
 interface ExerciseCardProps {
   exercise: Exercise
   log: ExerciseLog
-  onSetToggle: (setIndex: number) => void
-  onSetUpdate: (setIndex: number, weight: number | null, reps: number | null) => void
+  onSetToggle: (si: number) => void
+  onSetUpdate: (si: number, w: number | null, r: number | null) => void
   onCardioComplete: () => void
 }
 
-function ExerciseCard({
-  exercise,
-  log,
-  onSetToggle,
-  onSetUpdate,
-  onCardioComplete,
-}: ExerciseCardProps) {
+function ExerciseCard({ exercise, log, onSetToggle, onSetUpdate, onCardioComplete }: ExerciseCardProps) {
   const completedSets = log.sets.filter((s) => s.completed).length
   const totalSets = log.sets.length
 
   return (
     <div className="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden">
-      {/* Header */}
       <div className="px-4 pt-4 pb-3 flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
           <h3 className="text-white font-semibold text-base leading-snug">{exercise.name}</h3>
@@ -243,7 +281,6 @@ function ExerciseCard({
         </div>
       </div>
 
-      {/* Sets / Cardio */}
       <div className="px-4 pb-4 space-y-2">
         {exercise.type === 'strength'
           ? log.sets.map((setLog, i) => (
@@ -257,11 +294,7 @@ function ExerciseCard({
               />
             ))
           : (
-            <CardioBlock
-              exercise={exercise}
-              log={log}
-              onComplete={onCardioComplete}
-            />
+            <CardioBlock exercise={exercise} log={log} onComplete={onCardioComplete} />
           )}
       </div>
     </div>
@@ -273,34 +306,72 @@ function ExerciseCard({
 interface WorkoutViewProps {
   exercises: Exercise[]
   workoutLabel: string
+  userId: string
+  logDate: string           // 'YYYY-MM-DD'
+  dayType: string
+  initialSetLogs: InitialSetLog[]
 }
 
-function initLogs(exercises: Exercise[]): ExerciseLog[] {
-  return exercises.map((ex) => ({
-    exerciseId: ex.id,
-    sets: Array.from({ length: ex.sets ?? 0 }, () => ({
-      completed: false,
-      actualWeight: null,
-      actualReps: null,
-    })),
-    cardioCompleted: false,
-  }))
+function buildInitialLogs(exercises: Exercise[], dbLogs: InitialSetLog[]): ExerciseLog[] {
+  return exercises.map((ex) => {
+    const exLogs = dbLogs.filter((l) => l.exercise_id === ex.id)
+
+    if (ex.type === 'cardio') {
+      const cardioLog = exLogs.find((l) => l.set_index === -1)
+      return {
+        exerciseId: ex.id,
+        sets: [],
+        cardioCompleted: cardioLog?.completed ?? false,
+      }
+    }
+
+    const sets: SetLog[] = Array.from({ length: ex.sets ?? 0 }, (_, i) => {
+      const dbSet = exLogs.find((l) => l.set_index === i)
+      return {
+        completed: dbSet?.completed ?? false,
+        actualWeight: dbSet?.actual_weight ?? null,
+        actualReps: dbSet?.actual_reps ?? null,
+      }
+    })
+
+    return { exerciseId: ex.id, sets }
+  })
 }
 
-export default function WorkoutView({ exercises, workoutLabel }: WorkoutViewProps) {
-  const [logs, setLogs] = useState<ExerciseLog[]>(() => initLogs(exercises))
+export default function WorkoutView({
+  exercises,
+  workoutLabel,
+  userId,
+  logDate,
+  dayType,
+  initialSetLogs,
+}: WorkoutViewProps) {
+  const [logs, setLogs] = useState<ExerciseLog[]>(() =>
+    buildInitialLogs(exercises, initialSetLogs)
+  )
 
-  const totalSets = logs.reduce((acc, l) => acc + l.sets.length, 0)
-  const completedSets = logs.reduce((acc, l) => acc + l.sets.filter((s) => s.completed).length, 0)
-  const cardioTotal = logs.filter((_, i) => exercises[i]?.type === 'cardio').length
-  const cardioDone = logs.filter((l, i) => exercises[i]?.type === 'cardio' && l.cardioCompleted).length
-  const isAllDone = totalSets > 0
-    ? completedSets === totalSets && cardioDone === cardioTotal
-    : cardioDone === cardioTotal
+  // Check if all sets + cardio are done → auto-save gym_completed
+  const checkAllDone = useCallback(
+    async (updatedLogs: ExerciseLog[]) => {
+      const strengthDone = updatedLogs.every((l, i) =>
+        exercises[i]?.type === 'strength'
+          ? l.sets.every((s) => s.completed)
+          : true
+      )
+      const cardioDone = updatedLogs.every((l, i) =>
+        exercises[i]?.type === 'cardio' ? l.cardioCompleted : true
+      )
+      if (strengthDone && cardioDone) {
+        await markGymCompleted(userId, logDate, dayType)
+      }
+    },
+    [userId, logDate, dayType, exercises]
+  )
 
-  function toggleSet(exIndex: number, setIndex: number) {
-    setLogs((prev) =>
-      prev.map((log, i) => {
+  async function toggleSet(exIndex: number, setIndex: number) {
+    let updatedLogs: ExerciseLog[] = []
+    setLogs((prev) => {
+      updatedLogs = prev.map((log, i) => {
         if (i !== exIndex) return log
         const sets = log.sets.map((s, si) =>
           si === setIndex
@@ -314,12 +385,27 @@ export default function WorkoutView({ exercises, workoutLabel }: WorkoutViewProp
         )
         return { ...log, sets }
       })
-    )
+      return updatedLogs
+    })
+
+    const ex = exercises[exIndex]
+    const newSet = updatedLogs[exIndex]?.sets[setIndex]
+    if (ex && newSet) {
+      await upsertSetLog(userId, logDate, {
+        exercise_id: ex.id,
+        set_index: setIndex,
+        completed: newSet.completed,
+        actual_weight: newSet.actualWeight,
+        actual_reps: newSet.actualReps,
+      })
+      await checkAllDone(updatedLogs)
+    }
   }
 
-  function updateSet(exIndex: number, setIndex: number, weight: number | null, reps: number | null) {
-    setLogs((prev) =>
-      prev.map((log, i) => {
+  async function updateSet(exIndex: number, setIndex: number, weight: number | null, reps: number | null) {
+    let updatedLogs: ExerciseLog[] = []
+    setLogs((prev) => {
+      updatedLogs = prev.map((log, i) => {
         if (i !== exIndex) return log
         const sets = log.sets.map((s, si) =>
           si === setIndex
@@ -328,16 +414,49 @@ export default function WorkoutView({ exercises, workoutLabel }: WorkoutViewProp
         )
         return { ...log, sets }
       })
-    )
+      return updatedLogs
+    })
+
+    const ex = exercises[exIndex]
+    if (ex) {
+      await upsertSetLog(userId, logDate, {
+        exercise_id: ex.id,
+        set_index: setIndex,
+        completed: true,
+        actual_weight: weight,
+        actual_reps: reps,
+      })
+      await checkAllDone(updatedLogs)
+    }
   }
 
-  function completeCardio(exIndex: number) {
-    setLogs((prev) =>
-      prev.map((log, i) =>
+  async function completeCardio(exIndex: number) {
+    let updatedLogs: ExerciseLog[] = []
+    setLogs((prev) => {
+      updatedLogs = prev.map((log, i) =>
         i === exIndex ? { ...log, cardioCompleted: !log.cardioCompleted } : log
       )
-    )
+      return updatedLogs
+    })
+
+    const ex = exercises[exIndex]
+    if (ex) {
+      await upsertSetLog(userId, logDate, {
+        exercise_id: ex.id,
+        set_index: -1,
+        completed: updatedLogs[exIndex]?.cardioCompleted ?? false,
+        actual_weight: null,
+        actual_reps: null,
+      })
+      await checkAllDone(updatedLogs)
+    }
   }
+
+  const totalSets = logs.reduce((acc, l) => acc + l.sets.length, 0)
+  const completedSets = logs.reduce((acc, l) => acc + l.sets.filter((s) => s.completed).length, 0)
+  const cardioTotal = logs.filter((_, i) => exercises[i]?.type === 'cardio').length
+  const cardioDone = logs.filter((l, i) => exercises[i]?.type === 'cardio' && l.cardioCompleted).length
+  const isAllDone = completedSets === totalSets && cardioDone === cardioTotal
 
   const strengthExercises = exercises.filter((e) => e.type === 'strength')
   const cardioExercises = exercises.filter((e) => e.type === 'cardio')
@@ -348,9 +467,7 @@ export default function WorkoutView({ exercises, workoutLabel }: WorkoutViewProp
       {totalSets > 0 && (
         <div
           className={`rounded-2xl p-4 border flex items-center gap-4 ${
-            isAllDone
-              ? 'bg-emerald-950/60 border-emerald-700/60'
-              : 'bg-gray-900 border-gray-800'
+            isAllDone ? 'bg-emerald-950/60 border-emerald-700/60' : 'bg-gray-900 border-gray-800'
           }`}
         >
           <div className="flex-1">
@@ -372,7 +489,7 @@ export default function WorkoutView({ exercises, workoutLabel }: WorkoutViewProp
         </div>
       )}
 
-      {/* Strength exercises */}
+      {/* Strength */}
       {strengthExercises.length > 0 && (
         <div className="space-y-3">
           <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-500 px-1">
@@ -394,7 +511,7 @@ export default function WorkoutView({ exercises, workoutLabel }: WorkoutViewProp
         </div>
       )}
 
-      {/* Cardio exercises */}
+      {/* Cardio */}
       {cardioExercises.length > 0 && (
         <div className="space-y-3">
           <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-500 px-1">

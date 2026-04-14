@@ -1,9 +1,35 @@
 'use client'
 
 import { useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
 
-export default function YogaCheckIn() {
-  const [done, setDone] = useState(false)
+interface YogaCheckInProps {
+  userId: string
+  logDate: string     // 'YYYY-MM-DD'
+  dayType: string     // 'gym' | 'yoga'
+  initialDone: boolean
+}
+
+export default function YogaCheckIn({ userId, logDate, dayType, initialDone }: YogaCheckInProps) {
+  const [done, setDone] = useState(initialDone)
+  const [saving, setSaving] = useState(false)
+
+  async function handleToggle() {
+    setSaving(true)
+    const next = !done
+    const supabase = createClient()
+    await supabase.from('daily_logs').upsert(
+      {
+        user_id: userId,
+        log_date: logDate,
+        day_type: dayType,
+        yoga_completed: next,
+      },
+      { onConflict: 'user_id,log_date' }
+    )
+    setDone(next)
+    setSaving(false)
+  }
 
   return (
     <div className="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden">
@@ -22,14 +48,15 @@ export default function YogaCheckIn() {
         </p>
 
         <button
-          onClick={() => setDone(!done)}
-          className={`w-full py-4 rounded-xl font-semibold text-base transition-all ${
+          onClick={handleToggle}
+          disabled={saving}
+          className={`w-full py-4 rounded-xl font-semibold text-base transition-all disabled:opacity-60 ${
             done
               ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-900/40'
               : 'bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700'
           }`}
         >
-          {done ? '✓ Yoga Complete — Great work!' : 'Mark Yoga Done'}
+          {saving ? 'Saving…' : done ? '✓ Yoga Complete — Great work!' : 'Mark Yoga Done'}
         </button>
       </div>
     </div>
