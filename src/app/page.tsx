@@ -8,13 +8,15 @@ import {
   calcWeeklyCompletion,
   filterToThisWeek,
 } from '@/lib/stats'
-import { WorkoutKey } from '@/lib/types'
+import { WorkoutKey, DayWorkout, Exercise } from '@/lib/types'
+import { getWeekStart } from '@/lib/generate-plan'
 import Header from '@/components/Header'
 import StatsBar from '@/components/StatsBar'
 import WeekStatusBar from '@/components/WeekStatusBar'
 import WorkoutView, { InitialSetLog } from '@/components/WorkoutView'
 import FillerCardioView from '@/components/FillerCardioView'
 import YogaCheckIn from '@/components/YogaCheckIn'
+import GeneratePlanButton from '@/components/GeneratePlanButton'
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 const MONTH_NAMES = [
@@ -29,6 +31,7 @@ export default async function HomePage() {
 
   const now = new Date()
   const logDate = now.toISOString().slice(0, 10)
+  const weekStart = getWeekStart()
 
   // ── Fetch last 60 days of daily logs ──────────────────────────────────────
   const sixtyDaysAgo = new Date(now)
@@ -47,7 +50,36 @@ export default async function HomePage() {
   const suggestedKey = getSuggestedWorkout(weekLogs)
   const completedKeys = getCompletedWorkoutKeys(weekLogs)
   const isFiller = suggestedKey === 'filler'
-  const todayWorkout = isFiller ? FILLER_CARDIO : WORKOUTS[suggestedKey as WorkoutKey]
+
+  // ── Load this week's AI-generated plan (if available) ────────────────────
+  let hasPlan = false
+  let aiWorkouts: Record<WorkoutKey, DayWorkout> | null = null
+
+  if (!isFiller) {
+    const { data: planRows } = await supabase
+      .from('workout_plans')
+      .select('workout_key, label, exercises')
+      .eq('user_id', user.id)
+      .eq('week_start', weekStart)
+
+    if (planRows && planRows.length === 4) {
+      hasPlan = true
+      aiWorkouts = {} as Record<WorkoutKey, DayWorkout>
+      for (const row of planRows) {
+        aiWorkouts[row.workout_key as WorkoutKey] = {
+          key: row.workout_key as WorkoutKey,
+          label: row.label,
+          type: 'gym',
+          exercises: row.exercises as Exercise[],
+        }
+      }
+    }
+  }
+
+  // Use AI plan if available, otherwise fall back to baseline
+  const todayWorkout: DayWorkout = isFiller
+    ? FILLER_CARDIO
+    : (aiWorkouts?.[suggestedKey as WorkoutKey] ?? WORKOUTS[suggestedKey as WorkoutKey])
 
   // ── Fetch today's set logs ────────────────────────────────────────────────
   const { data: rawSetLogs } = await supabase
@@ -100,7 +132,12 @@ export default async function HomePage() {
               {workoutBadge}
             </span>
           </div>
-          <p className="text-gray-400 text-sm">{todayWorkout.label}</p>
+          <p className="text-gray-400 text-sm">
+            {todayWorkout.label}
+            {hasPlan && (
+              <span className="ml-2 text-xs text-indigo-400 font-medium">✨ AI</span>
+            )}
+          </p>
         </div>
 
         {/* Stats */}
@@ -113,6 +150,9 @@ export default async function HomePage() {
 
         {/* Week A/B/C/D status */}
         <WeekStatusBar completedKeys={completedKeys} suggestedKey={suggestedKey} />
+
+        {/* AI plan generation banner — shown if no plan yet and not filler */}
+        {!isFiller && !hasPlan && <GeneratePlanButton />}
 
         {/* Today's workout */}
         {isFiller ? (
