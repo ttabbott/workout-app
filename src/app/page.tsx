@@ -12,13 +12,12 @@ import { WorkoutKey, DayWorkout, Exercise } from '@/lib/types'
 import { getWeekStart } from '@/lib/generate-plan'
 import Header from '@/components/Header'
 import StatsBar from '@/components/StatsBar'
-import WeekStatusBar from '@/components/WeekStatusBar'
 import WorkoutView, { InitialSetLog } from '@/components/WorkoutView'
 import FillerCardioView from '@/components/FillerCardioView'
 import YogaCheckIn from '@/components/YogaCheckIn'
 import GeneratePlanButton from '@/components/GeneratePlanButton'
 import WeeklyNotes from '@/components/WeeklyNotes'
-import WorkoutPicker from '@/components/WorkoutPicker'
+import WorkoutWeekBar from '@/components/WorkoutWeekBar'
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 const MONTH_NAMES = [
@@ -179,17 +178,13 @@ export default async function HomePage({
           totalDays={weekly.totalDays}
         />
 
-        {/* Week A/B/C/D status */}
-        <WeekStatusBar completedKeys={completedKeys} suggestedKey={suggestedKey} activeKey={activeKey} />
-
-        {/* Change workout picker */}
-        {!isFiller && pickerOptions.length > 0 && (
-          <WorkoutPicker
-            activeKey={activeKey as WorkoutKey}
-            suggestedKey={suggestedKey as WorkoutKey}
-            options={pickerOptions}
-          />
-        )}
+        {/* Week status + change workout */}
+        <WorkoutWeekBar
+          completedKeys={completedKeys}
+          suggestedKey={suggestedKey}
+          activeKey={activeKey}
+          pickerOptions={pickerOptions}
+        />
 
         {/* AI plan generation banner — shown if no plan yet and not filler */}
         {!isFiller && !hasPlan && <GeneratePlanButton />}
