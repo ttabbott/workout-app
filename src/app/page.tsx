@@ -17,6 +17,7 @@ import WorkoutView, { InitialSetLog } from '@/components/WorkoutView'
 import FillerCardioView from '@/components/FillerCardioView'
 import YogaCheckIn from '@/components/YogaCheckIn'
 import GeneratePlanButton from '@/components/GeneratePlanButton'
+import WeeklyNotes from '@/components/WeeklyNotes'
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 const MONTH_NAMES = [
@@ -106,6 +107,16 @@ export default async function HomePage() {
 
   const yogaDoneToday = todayLog?.yoga_completed ?? false
 
+  // ── Fetch this week's user note ───────────────────────────────────────────
+  const { data: noteRow } = await supabase
+    .from('user_notes')
+    .select('note_text')
+    .eq('user_id', user.id)
+    .eq('week_start', weekStart)
+    .maybeSingle()
+
+  const currentNote = noteRow?.note_text ?? ''
+
   // ── Stats ─────────────────────────────────────────────────────────────────
   const yogaStreak = calcYogaStreak(allLogs)
   const weekly = calcWeeklyCompletion(weekLogs)
@@ -170,6 +181,16 @@ export default async function HomePage() {
             dayType="gym"
             workoutKey={suggestedKey as WorkoutKey}
             initialSetLogs={initialSetLogs}
+            weekStart={weekStart}
+          />
+        )}
+
+        {/* Notes for next week */}
+        {!isFiller && (
+          <WeeklyNotes
+            userId={user.id}
+            weekStart={weekStart}
+            initialNote={currentNote}
           />
         )}
 

@@ -374,3 +374,127 @@ export const WORKOUTS: Record<WorkoutKey, DayWorkout> = {
 }
 
 export const WORKOUT_ORDER: WorkoutKey[] = ['A', 'B', 'C', 'D']
+
+// ─── Exercise substitutions ───────────────────────────────────────────────────
+// Shown in the "Can't do this" sheet. Keyed by exercise ID.
+// If an AI-generated exercise ID isn't in this map, fallback is skip + note.
+
+export interface Substitution {
+  id: string
+  name: string
+  note?: string
+}
+
+export const SUBSTITUTIONS: Record<string, Substitution[]> = {
+  // ── Workout A (Push) ──────────────────────────────────────────────────────
+  'a-bench-press': [
+    { id: 'a-chest-press-machine', name: 'Chest Press Machine' },
+    { id: 'a-db-bench-press',      name: 'Dumbbell Bench Press' },
+    { id: 'a-smith-bench',         name: 'Smith Machine Bench Press' },
+  ],
+  'a-incline-db': [
+    { id: 'a-incline-barbell',     name: 'Incline Barbell Press' },
+    { id: 'a-incline-machine',     name: 'Incline Chest Press Machine' },
+  ],
+  'a-cable-fly': [
+    { id: 'a-pec-deck',            name: 'Pec Deck / Chest Fly Machine' },
+    { id: 'a-db-fly',              name: 'Dumbbell Chest Fly (flat)' },
+  ],
+  'a-ohp': [
+    { id: 'a-seated-db-press',     name: 'Seated Dumbbell Shoulder Press' },
+    { id: 'a-smith-ohp',           name: 'Smith Machine OHP' },
+    { id: 'a-machine-shoulder',    name: 'Shoulder Press Machine' },
+  ],
+  'a-lateral-raise': [
+    { id: 'a-cable-lateral',       name: 'Cable Lateral Raise' },
+    { id: 'a-machine-lateral',     name: 'Lateral Raise Machine' },
+  ],
+  'a-tricep-pushdown': [
+    { id: 'a-tricep-overhead',     name: 'Overhead Tricep Extension (cable)' },
+    { id: 'a-skull-crusher',       name: 'EZ-Bar Skull Crusher', note: 'Use EZ-bar' },
+    { id: 'a-dips',                name: 'Tricep Dips (bodyweight)' },
+  ],
+  // ── Workout B (Pull) ──────────────────────────────────────────────────────
+  'b-rdl': [
+    { id: 'b-db-rdl',              name: 'Dumbbell RDL' },
+    { id: 'b-straight-leg-dl',     name: 'Straight-Leg Deadlift (lighter)' },
+    { id: 'b-good-morning',        name: 'Good Mornings (barbell)', note: 'Light weight' },
+  ],
+  'b-pullup': [
+    { id: 'b-lat-pulldown-wide',   name: 'Wide-Grip Lat Pulldown' },
+    { id: 'b-assisted-pullup',     name: 'Assisted Pull-Up Machine' },
+  ],
+  'b-seated-row': [
+    { id: 'b-chest-supported-row', name: 'Chest-Supported DB Row' },
+    { id: 'b-t-bar-row',           name: 'T-Bar Row' },
+    { id: 'b-machine-row',         name: 'Machine Row' },
+  ],
+  'b-lat-pulldown': [
+    { id: 'b-straight-arm-pull',   name: 'Straight-Arm Pulldown (cable)' },
+    { id: 'b-single-arm-row',      name: 'Single-Arm DB Row' },
+  ],
+  'b-bb-curl': [
+    { id: 'b-ez-bar-curl',         name: 'EZ-Bar Curl' },
+    { id: 'b-cable-curl',          name: 'Cable Curl' },
+    { id: 'b-db-curl',             name: 'Dumbbell Curl' },
+  ],
+  'b-hammer-curl': [
+    { id: 'b-rope-curl',           name: 'Rope Hammer Curl (cable)' },
+    { id: 'b-incline-db-curl',     name: 'Incline Dumbbell Curl' },
+  ],
+  // ── Workout C (Legs) ──────────────────────────────────────────────────────
+  'c-squat': [
+    { id: 'c-goblet-squat',        name: 'Goblet Squat', note: 'Lighter load' },
+    { id: 'c-hack-squat',          name: 'Hack Squat Machine' },
+    { id: 'c-leg-press-sub',       name: 'Leg Press (higher volume)' },
+  ],
+  'c-leg-press': [
+    { id: 'c-belt-squat',          name: 'Belt Squat' },
+    { id: 'c-db-squat',            name: 'Dumbbell Squat' },
+  ],
+  'c-lunge': [
+    { id: 'c-reverse-lunge',       name: 'Reverse Lunge' },
+    { id: 'c-split-squat',         name: 'Bulgarian Split Squat' },
+    { id: 'c-step-up',             name: 'Step-Up (box + dumbbells)' },
+  ],
+  'c-leg-curl': [
+    { id: 'c-seated-leg-curl',     name: 'Seated Leg Curl Machine' },
+    { id: 'c-nordic-curl',         name: 'Nordic Curl (bodyweight)', note: 'Hard — reduce range' },
+    { id: 'c-db-leg-curl',         name: 'Dumbbell Leg Curl' },
+  ],
+  'c-calf-raise': [
+    { id: 'c-seated-calf-raise',   name: 'Seated Calf Raise Machine' },
+    { id: 'c-leg-press-calf',      name: 'Calf Raise on Leg Press' },
+  ],
+  // ── Workout D (Shoulders / Core) ─────────────────────────────────────────
+  'd-db-shoulder-press': [
+    { id: 'd-barbell-ohp',         name: 'Barbell OHP' },
+    { id: 'd-machine-shoulder',    name: 'Shoulder Press Machine' },
+    { id: 'd-smith-shoulder',      name: 'Smith Machine Shoulder Press' },
+  ],
+  'd-arnold-press': [
+    { id: 'd-seated-db-press-sub', name: 'Seated Dumbbell Press' },
+    { id: 'd-cable-shoulder-press',name: 'Single-Arm Cable Press' },
+  ],
+  'd-face-pull': [
+    { id: 'd-band-pull-apart',     name: 'Band Pull-Apart', note: 'Use resistance band' },
+    { id: 'd-rear-delt-fly',       name: 'Rear Delt Fly Machine' },
+  ],
+  'd-front-raise': [
+    { id: 'd-cable-front-raise',   name: 'Cable Front Raise' },
+    { id: 'd-plate-raise',         name: 'Plate Front Raise' },
+  ],
+  'd-plank': [
+    { id: 'd-dead-bug',            name: 'Dead Bug', note: '3 × 10 reps' },
+    { id: 'd-ab-wheel',            name: 'Ab Wheel Rollout' },
+  ],
+  'd-cable-crunch': [
+    { id: 'd-decline-crunch',      name: 'Decline Crunch' },
+    { id: 'd-hanging-leg-raise',   name: 'Hanging Leg Raise' },
+  ],
+  'd-russian-twist': [
+    { id: 'd-landmine-rotation',   name: 'Landmine Rotation' },
+    { id: 'd-woodchop',            name: 'Cable Woodchop' },
+    { id: 'd-bicycle-crunch',      name: 'Bicycle Crunch (bodyweight)' },
+  ],
+}

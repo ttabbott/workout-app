@@ -129,10 +129,23 @@ export async function GET(req: NextRequest) {
         }
       })
 
-      const plan = await generateWeeklyPlan(perf)
+      // Fetch this week's user notes (if any) and include in generation
+      const { data: noteRow } = await supabase
+        .from('user_notes')
+        .select('id, note_text')
+        .eq('user_id', userId)
+        .eq('week_start', weekStart)
+        .maybeSingle()
+
+      const plan = await generateWeeklyPlan(perf, noteRow?.note_text ?? undefined)
       if (!plan) {
         results.push({ userId, status: 'error', error: 'generateWeeklyPlan returned null' })
         continue
+      }
+
+      // Delete consumed note
+      if (noteRow?.id) {
+        await supabase.from('user_notes').delete().eq('id', noteRow.id)
       }
 
       const rows = WORKOUT_ORDER.map((key: WorkoutKey) => ({

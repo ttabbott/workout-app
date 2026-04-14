@@ -91,7 +91,11 @@ function formatBaseline(): string {
   return lines.join('\n')
 }
 
-function buildPrompt(perf: LastWeekPerf): string {
+function buildPrompt(perf: LastWeekPerf, userNotes?: string): string {
+  const notesSection = userNotes?.trim()
+    ? `\nUSER FEEDBACK FROM LAST WEEK\n"${userNotes.trim()}"\n`
+    : ''
+
   return `You are an expert personal trainer. Generate a weekly 4-day gym workout plan in JSON.
 
 USER PROFILE
@@ -105,7 +109,7 @@ ${formatBaseline()}
 
 LAST WEEK PERFORMANCE
 ${formatPerf(perf)}
-
+${notesSection}
 PROGRESSIVE OVERLOAD RULES
 - All working sets hit at target weight → increase compound lifts +5 lbs, isolation +2.5 lbs next week
 - Any working set missed → keep same weight
@@ -174,10 +178,10 @@ function isValidPlan(v: unknown): v is { workouts: Record<WorkoutKey, { label: s
 
 // ─── Main export ──────────────────────────────────────────────────────────────
 
-export async function generateWeeklyPlan(perf: LastWeekPerf): Promise<Record<WorkoutKey, DayWorkout> | null> {
+export async function generateWeeklyPlan(perf: LastWeekPerf, userNotes?: string): Promise<Record<WorkoutKey, DayWorkout> | null> {
   try {
     const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
-    const prompt = buildPrompt(perf)
+    const prompt = buildPrompt(perf, userNotes)
 
     const msg = await client.messages.create({
       model: MODEL,

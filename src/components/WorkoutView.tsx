@@ -1,9 +1,11 @@
 'use client'
 
 import { useState, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import { Exercise, SetLog, ExerciseLog, WorkoutKey, SetDetail } from '@/lib/types'
 import { createClient } from '@/lib/supabase/client'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import ExerciseSwapSheet from './ExerciseSwapSheet'
 
 export interface InitialSetLog {
   exercise_id: string
@@ -239,9 +241,10 @@ interface ExerciseCardProps {
   onSetToggle: (si: number) => void
   onSetUpdate: (si: number, w: number | null, r: number | null) => void
   onCardioComplete: () => void
+  onCantDo: () => void
 }
 
-function ExerciseCard({ exercise, log, onSetToggle, onSetUpdate, onCardioComplete }: ExerciseCardProps) {
+function ExerciseCard({ exercise, log, onSetToggle, onSetUpdate, onCardioComplete, onCantDo }: ExerciseCardProps) {
   const completedSets = log.sets.filter((s) => s.completed).length
   const totalSets = log.sets.length
   const setCount = exercise.setDetails?.length ?? exercise.sets ?? totalSets
@@ -266,6 +269,12 @@ function ExerciseCard({ exercise, log, onSetToggle, onSetUpdate, onCardioComplet
           {exercise.notes && (
             <p className="text-amber-400/80 text-xs mt-1 italic">{exercise.notes}</p>
           )}
+          <button
+            onClick={onCantDo}
+            className="text-xs text-gray-600 hover:text-gray-400 mt-1.5 transition-colors"
+          >
+            Can&apos;t do this
+          </button>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           {exercise.youtubeUrl && exercise.type === 'strength' && (
@@ -330,6 +339,7 @@ interface WorkoutViewProps {
   dayType: string
   workoutKey?: WorkoutKey   // A/B/C/D — saved on completion
   initialSetLogs: InitialSetLog[]
+  weekStart?: string        // for writing notes-for-next-week
 }
 
 function buildInitialLogs(exercises: Exercise[], dbLogs: InitialSetLog[]): ExerciseLog[] {
@@ -362,22 +372,68 @@ export default function WorkoutView({
   dayType,
   workoutKey,
   initialSetLogs,
+  weekStart,
 }: WorkoutViewProps) {
   // Stable Supabase client — created once, not on every action
   const supabase = useRef(createClient()).current
+  const router = useRouter()
+
+  // Live exercise list — may be mutated by swaps
+  const [liveExercises, setLiveExercises] = useState<Exercise[]>(exercises)
+  const [skippedIds, setSkippedIds] = useState<Set<string>>(new Set())
+  const [swapSheet, setSwapSheet] = useState<{ exercise: Exercise; exIndex: number } | null>(null)
 
   const [logs, setLogs] = useState<ExerciseLog[]>(() =>
     buildInitialLogs(exercises, initialSetLogs)
   )
   const [saveError, setSaveError] = useState<string | null>(null)
 
+  function handleSkip(exIndex: number) {
+    setSkippedIds((prev) => new Set([...prev, liveExercises[exIndex].id]))
+    setSwapSheet(null)
+  }
+
+  async function handleSwap(exIndex: number, substitute: Exercise) {
+    // Update live exercises
+    const newExercises = liveExercises.map((e, i) => i === exIndex ? substitute : e)
+    setLiveExercises(newExercises)
+
+    // Reset logs for that exercise slot (fresh start for the substitute)
+    const setCount = substitute.setDetails?.length ?? substitute.sets ?? 0
+    const freshLog: ExerciseLog = substitute.type === 'cardio'
+      ? { exerciseId: substitute.id, sets: [], cardioCompleted: false }
+      : { exerciseId: substitute.id, sets: Array.from({ length: setCount }, () => ({ completed: false, actualWeight: null, actualReps: null })) }
+
+    setLogs((prev) => prev.map((l, i) => i === exIndex ? freshLog : l))
+    setSwapSheet(null)
+
+    // Persist swap to DB if a plan row exists (best-effort, silent on 404)
+    if (workoutKey) {
+      fetch('/api/swap-exercise', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ workoutKey, oldExerciseId: liveExercises[exIndex].id, substitute }),
+      }).catch(() => {/* silent — baseline workouts have no plan row */})
+    }
+  }
+
+  async function handleNoteForNextWeek(text: string) {
+    if (!weekStart) return
+    await supabase.from('user_notes').upsert(
+      { user_id: userId, week_start: weekStart, note_text: text },
+      { onConflict: 'user_id,week_start' }
+    )
+    // Refresh to show note in WeeklyNotes component
+    router.refresh()
+  }
+
   // Check if everything is done → mark gym_completed + workout_key in daily_logs
   async function checkAllDone(updatedLogs: ExerciseLog[]) {
     const allStrengthDone = updatedLogs.every((l, i) =>
-      exercises[i]?.type === 'strength' ? l.sets.every((s) => s.completed) : true
+      liveExercises[i]?.type === 'strength' ? l.sets.every((s) => s.completed) : true
     )
     const allCardioDone = updatedLogs.every((l, i) =>
-      exercises[i]?.type === 'cardio' ? l.cardioCompleted : true
+      liveExercises[i]?.type === 'cardio' ? l.cardioCompleted : true
     )
     if (allStrengthDone && allCardioDone) {
       await upsertDailyLog(supabase, userId, logDate, dayType, {
@@ -388,7 +444,7 @@ export default function WorkoutView({
   }
 
   async function toggleSet(exIndex: number, setIndex: number) {
-    const ex = exercises[exIndex]
+    const ex = liveExercises[exIndex]
     const prevSet = logs[exIndex].sets[setIndex]
 
     // Compute new values BEFORE calling setState
@@ -429,7 +485,7 @@ export default function WorkoutView({
   }
 
   async function updateSet(exIndex: number, setIndex: number, weight: number | null, reps: number | null) {
-    const ex = exercises[exIndex]
+    const ex = liveExercises[exIndex]
 
     const newLogs = logs.map((log, i) => {
       if (i !== exIndex) return log
@@ -461,7 +517,7 @@ export default function WorkoutView({
   }
 
   async function completeCardio(exIndex: number) {
-    const ex = exercises[exIndex]
+    const ex = liveExercises[exIndex]
     const newCompleted = !logs[exIndex].cardioCompleted
 
     const newLogs = logs.map((log, i) =>
@@ -487,14 +543,15 @@ export default function WorkoutView({
     }
   }
 
+  const visibleExercises = liveExercises.filter((e) => !skippedIds.has(e.id))
   const totalSets = logs.reduce((acc, l) => acc + l.sets.length, 0)
   const completedSets = logs.reduce((acc, l) => acc + l.sets.filter((s) => s.completed).length, 0)
-  const cardioTotal = logs.filter((_, i) => exercises[i]?.type === 'cardio').length
-  const cardioDone = logs.filter((l, i) => exercises[i]?.type === 'cardio' && l.cardioCompleted).length
+  const cardioTotal = logs.filter((_, i) => liveExercises[i]?.type === 'cardio' && !skippedIds.has(liveExercises[i].id)).length
+  const cardioDone = logs.filter((l, i) => liveExercises[i]?.type === 'cardio' && !skippedIds.has(liveExercises[i].id) && l.cardioCompleted).length
   const isAllDone = completedSets === totalSets && cardioDone === cardioTotal
 
-  const strengthExercises = exercises.filter((e) => e.type === 'strength')
-  const cardioExercises = exercises.filter((e) => e.type === 'cardio')
+  const strengthExercises = visibleExercises.filter((e) => e.type === 'strength')
+  const cardioExercises = visibleExercises.filter((e) => e.type === 'cardio')
 
   return (
     <div className="space-y-4">
@@ -538,7 +595,7 @@ export default function WorkoutView({
             Strength
           </h2>
           {strengthExercises.map((exercise) => {
-            const exIndex = exercises.indexOf(exercise)
+            const exIndex = liveExercises.indexOf(exercise)
             return (
               <ExerciseCard
                 key={exercise.id}
@@ -547,6 +604,7 @@ export default function WorkoutView({
                 onSetToggle={(si) => toggleSet(exIndex, si)}
                 onSetUpdate={(si, w, r) => updateSet(exIndex, si, w, r)}
                 onCardioComplete={() => completeCardio(exIndex)}
+                onCantDo={() => setSwapSheet({ exercise, exIndex })}
               />
             )
           })}
@@ -560,7 +618,7 @@ export default function WorkoutView({
             Cardio
           </h2>
           {cardioExercises.map((exercise) => {
-            const exIndex = exercises.indexOf(exercise)
+            const exIndex = liveExercises.indexOf(exercise)
             return (
               <ExerciseCard
                 key={exercise.id}
@@ -569,10 +627,23 @@ export default function WorkoutView({
                 onSetToggle={(si) => toggleSet(exIndex, si)}
                 onSetUpdate={(si, w, r) => updateSet(exIndex, si, w, r)}
                 onCardioComplete={() => completeCardio(exIndex)}
+                onCantDo={() => setSwapSheet({ exercise, exIndex })}
               />
             )
           })}
         </div>
+      )}
+
+      {/* Exercise swap bottom sheet */}
+      {swapSheet && (
+        <ExerciseSwapSheet
+          exercise={swapSheet.exercise}
+          workoutKey={workoutKey ?? ''}
+          onSkip={() => handleSkip(swapSheet.exIndex)}
+          onSwap={(sub) => handleSwap(swapSheet.exIndex, sub)}
+          onNoteForNextWeek={handleNoteForNextWeek}
+          onClose={() => setSwapSheet(null)}
+        />
       )}
     </div>
   )

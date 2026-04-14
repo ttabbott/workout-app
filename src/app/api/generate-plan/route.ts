@@ -89,10 +89,25 @@ export async function POST() {
       }
     })
 
+    // ── Fetch this week's user notes (if any) ────────────────────────────────
+    const { data: noteRow } = await supabase
+      .from('user_notes')
+      .select('id, note_text')
+      .eq('user_id', user.id)
+      .eq('week_start', weekStart)
+      .maybeSingle()
+
+    const userNotes = noteRow?.note_text ?? undefined
+
     // ── Generate new plan via Claude ─────────────────────────────────────────
-    const plan = await generateWeeklyPlan(perf)
+    const plan = await generateWeeklyPlan(perf, userNotes)
     if (!plan) {
       return NextResponse.json({ error: 'Failed to generate plan' }, { status: 500 })
+    }
+
+    // ── Delete consumed note ──────────────────────────────────────────────────
+    if (noteRow?.id) {
+      await supabase.from('user_notes').delete().eq('id', noteRow.id)
     }
 
     // ── Upsert into workout_plans ─────────────────────────────────────────────
