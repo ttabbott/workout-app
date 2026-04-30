@@ -180,7 +180,7 @@ export default async function HomePage({
 
         {/* Week status + change workout */}
         <WorkoutWeekBar
-          completedKeys={completedKeys}
+          completedKeys={[...completedKeys]}
           suggestedKey={suggestedKey}
           activeKey={activeKey}
           activeLabel={todayWorkout.label}

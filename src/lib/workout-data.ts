@@ -1,8 +1,75 @@
 import { DayWorkout, WorkoutKey } from './types'
 
-// ─── Workout A — Push (Chest / Shoulders / Triceps) ──────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// WORKOUT MODE — flip to 'full' when ready to return to standard lengths
+// ─────────────────────────────────────────────────────────────────────────────
+export const WORKOUT_MODE: 'short' | 'full' = 'short'
 
-const WORKOUT_A: DayWorkout = {
+// ─── Workout A — Push · SHORT (~30 min + 5 min warm-up) ──────────────────────
+// Bench Press → Incline DB → Lateral Raise → Tricep Pushdown → Row finisher
+
+const WORKOUT_A_SHORT: DayWorkout = {
+  key: 'A',
+  label: 'Push — Chest, Shoulders & Triceps',
+  type: 'gym',
+  exercises: [
+    {
+      id: 'a-bench-press',
+      name: 'Barbell Bench Press',
+      type: 'strength',
+      restSeconds: 90,
+      notes: '⏱ Start with 5 min warm-up (light bike, treadmill, or dynamic stretch)',
+      setDetails: [
+        { weight: 115, reps: '8',  note: 'working' },
+        { weight: 135, reps: '6',  note: 'working' },
+        { weight: 145, reps: '4',  note: 'top set' },
+      ],
+    },
+    {
+      id: 'a-incline-db',
+      name: 'Incline Dumbbell Press',
+      type: 'strength',
+      restSeconds: 75,
+      setDetails: [
+        { weight: 45, reps: '10' },
+        { weight: 50, reps: '8'  },
+        { weight: 55, reps: '8'  },
+      ],
+    },
+    {
+      id: 'a-lateral-raise',
+      name: 'Lateral Raises',
+      type: 'strength',
+      restSeconds: 45,
+      setDetails: [
+        { weight: 15, reps: '12' },
+        { weight: 15, reps: '12' },
+      ],
+    },
+    {
+      id: 'a-tricep-pushdown',
+      name: 'Tricep Cable Pushdown',
+      type: 'strength',
+      restSeconds: 45,
+      setDetails: [
+        { weight: 40, reps: '10' },
+        { weight: 40, reps: '10' },
+      ],
+      youtubeUrl: 'https://www.youtube.com/results?search_query=tricep+cable+pushdown+form',
+    },
+    {
+      id: 'a-cardio',
+      name: 'Rowing Machine',
+      type: 'cardio',
+      duration: 8,
+      intensity: 'Moderate steady pace — focus on full stroke, keep damper at 4–5',
+    },
+  ],
+}
+
+// ─── Workout A — Push · FULL (~60 min) ───────────────────────────────────────
+
+const WORKOUT_A_FULL: DayWorkout = {
   key: 'A',
   label: 'Push — Chest, Shoulders & Triceps',
   type: 'gym',
@@ -88,9 +155,72 @@ const WORKOUT_A: DayWorkout = {
   ],
 }
 
-// ─── Workout B — Pull (Back / Biceps) ────────────────────────────────────────
+// ─── Workout B — Pull · SHORT (~30 min + 5 min warm-up) ─────────────────────
+// RDL → Pull-Ups → Cable Row → Hammer Curl → Bike finisher
 
-const WORKOUT_B: DayWorkout = {
+const WORKOUT_B_SHORT: DayWorkout = {
+  key: 'B',
+  label: 'Pull — Back & Biceps',
+  type: 'gym',
+  exercises: [
+    {
+      id: 'b-rdl',
+      name: 'Romanian Deadlift',
+      type: 'strength',
+      restSeconds: 90,
+      notes: '⏱ Start with 5 min warm-up (light bike, treadmill, or dynamic stretch)',
+      setDetails: [
+        { weight: 165, reps: '8'  },
+        { weight: 185, reps: '6'  },
+        { weight: 205, reps: '4', note: 'top set' },
+      ],
+    },
+    {
+      id: 'b-pullup',
+      name: 'Pull-Ups',
+      type: 'strength',
+      restSeconds: 75,
+      setDetails: [
+        { unit: 'bodyweight', reps: '8' },
+        { unit: 'bodyweight', reps: '8' },
+        { unit: 'bodyweight', reps: '8' },
+      ],
+      notes: 'Add weight if 8 reps feel easy',
+    },
+    {
+      id: 'b-seated-row',
+      name: 'Seated Cable Row',
+      type: 'strength',
+      restSeconds: 60,
+      setDetails: [
+        { weight: 110, reps: '10' },
+        { weight: 120, reps: '10' },
+        { weight: 130, reps: '8'  },
+      ],
+    },
+    {
+      id: 'b-hammer-curl',
+      name: 'Hammer Curl',
+      type: 'strength',
+      restSeconds: 45,
+      setDetails: [
+        { weight: 30, reps: '12' },
+        { weight: 30, reps: '10' },
+      ],
+    },
+    {
+      id: 'b-cardio',
+      name: 'Stationary Bike HIIT',
+      type: 'cardio',
+      duration: 8,
+      intensity: '4 rounds: 30s all-out sprint / 90s easy pedal',
+    },
+  ],
+}
+
+// ─── Workout B — Pull · FULL (~60 min) ───────────────────────────────────────
+
+const WORKOUT_B_FULL: DayWorkout = {
   key: 'B',
   label: 'Pull — Back & Biceps',
   type: 'gym',
@@ -166,9 +296,60 @@ const WORKOUT_B: DayWorkout = {
   ],
 }
 
-// ─── Workout C — Legs ─────────────────────────────────────────────────────────
+// ─── Workout C — Legs · SHORT (~30 min + 5 min warm-up) ─────────────────────
+// Squat → Leg Press → Leg Curl → Stairmaster finisher
 
-const WORKOUT_C: DayWorkout = {
+const WORKOUT_C_SHORT: DayWorkout = {
+  key: 'C',
+  label: 'Legs — Quads, Hamstrings & Glutes',
+  type: 'gym',
+  exercises: [
+    {
+      id: 'c-squat',
+      name: 'Barbell Back Squat',
+      type: 'strength',
+      restSeconds: 90,
+      notes: '⏱ Start with 5 min warm-up (light bike, treadmill, or dynamic stretch)',
+      setDetails: [
+        { weight: 165, reps: '8'  },
+        { weight: 185, reps: '6'  },
+        { weight: 205, reps: '4', note: 'top set' },
+      ],
+    },
+    {
+      id: 'c-leg-press',
+      name: 'Leg Press',
+      type: 'strength',
+      restSeconds: 90,
+      setDetails: [
+        { weight: 245, reps: '12' },
+        { weight: 270, reps: '10' },
+        { weight: 315, reps: '8'  },
+      ],
+    },
+    {
+      id: 'c-leg-curl',
+      name: 'Lying Leg Curl',
+      type: 'strength',
+      restSeconds: 60,
+      setDetails: [
+        { weight: 80, reps: '10' },
+        { weight: 90, reps: '8'  },
+      ],
+    },
+    {
+      id: 'c-cardio',
+      name: 'Stairmaster',
+      type: 'cardio',
+      duration: 8,
+      intensity: 'Moderate (level 7–8) — steady grind to finish the legs session',
+    },
+  ],
+}
+
+// ─── Workout C — Legs · FULL (~60 min) ───────────────────────────────────────
+
+const WORKOUT_C_FULL: DayWorkout = {
   key: 'C',
   label: 'Legs — Quads, Hamstrings & Glutes',
   type: 'gym',
@@ -242,9 +423,61 @@ const WORKOUT_C: DayWorkout = {
   ],
 }
 
-// ─── Workout D — Shoulders / Core ────────────────────────────────────────────
+// ─── Workout D — Shoulders / Core · SHORT (~28 min + 5 min warm-up) ─────────
+// Shoulder Press → Face Pull → Plank → Treadmill finisher
 
-const WORKOUT_D: DayWorkout = {
+const WORKOUT_D_SHORT: DayWorkout = {
+  key: 'D',
+  label: 'Shoulders & Core',
+  type: 'gym',
+  exercises: [
+    {
+      id: 'd-db-shoulder-press',
+      name: 'Dumbbell Shoulder Press',
+      type: 'strength',
+      restSeconds: 90,
+      notes: '⏱ Start with 5 min warm-up (light bike, treadmill, or dynamic stretch)',
+      setDetails: [
+        { weight: 40, reps: '10' },
+        { weight: 45, reps: '8'  },
+        { weight: 50, reps: '8'  },
+      ],
+    },
+    {
+      id: 'd-face-pull',
+      name: 'Face Pull',
+      type: 'strength',
+      restSeconds: 45,
+      setDetails: [
+        { weight: 25, reps: '15' },
+        { weight: 30, reps: '15' },
+        { weight: 35, reps: '12' },
+      ],
+      youtubeUrl: 'https://www.youtube.com/results?search_query=face+pull+cable+form',
+    },
+    {
+      id: 'd-plank',
+      name: 'Plank',
+      type: 'strength',
+      restSeconds: 45,
+      setDetails: [
+        { unit: 'bodyweight', reps: '60s' },
+        { unit: 'bodyweight', reps: '60s' },
+      ],
+    },
+    {
+      id: 'd-cardio',
+      name: 'Treadmill Incline Walk',
+      type: 'cardio',
+      duration: 7,
+      intensity: 'Moderate (incline 10, speed 3.5)',
+    },
+  ],
+}
+
+// ─── Workout D — Shoulders / Core · FULL (~55 min) ───────────────────────────
+
+const WORKOUT_D_FULL: DayWorkout = {
   key: 'D',
   label: 'Shoulders & Core',
   type: 'gym',
@@ -366,12 +599,22 @@ export const FILLER_CARDIO: DayWorkout = {
 
 // ─── Exports ──────────────────────────────────────────────────────────────────
 
-export const WORKOUTS: Record<WorkoutKey, DayWorkout> = {
-  A: WORKOUT_A,
-  B: WORKOUT_B,
-  C: WORKOUT_C,
-  D: WORKOUT_D,
+const SHORT_WORKOUTS: Record<WorkoutKey, DayWorkout> = {
+  A: WORKOUT_A_SHORT,
+  B: WORKOUT_B_SHORT,
+  C: WORKOUT_C_SHORT,
+  D: WORKOUT_D_SHORT,
 }
+
+const FULL_WORKOUTS: Record<WorkoutKey, DayWorkout> = {
+  A: WORKOUT_A_FULL,
+  B: WORKOUT_B_FULL,
+  C: WORKOUT_C_FULL,
+  D: WORKOUT_D_FULL,
+}
+
+export const WORKOUTS: Record<WorkoutKey, DayWorkout> =
+  WORKOUT_MODE === 'short' ? SHORT_WORKOUTS : FULL_WORKOUTS
 
 export const WORKOUT_ORDER: WorkoutKey[] = ['A', 'B', 'C', 'D']
 

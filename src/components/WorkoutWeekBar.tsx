@@ -11,7 +11,7 @@ interface WorkoutOption {
 }
 
 interface Props {
-  completedKeys: Set<WorkoutKey>
+  completedKeys: WorkoutKey[]
   suggestedKey: WorkoutKey | 'filler'
   activeKey: WorkoutKey | 'filler'
   activeLabel: string
@@ -45,7 +45,7 @@ export default function WorkoutWeekBar({ completedKeys, suggestedKey, activeKey,
         {/* Compact chips */}
         <div className="flex gap-1.5 flex-1">
           {WORKOUT_ORDER.map((key) => {
-            const isDone = completedKeys.has(key)
+            const isDone = completedKeys.includes(key)
             const isActive = activeKey === key
             return (
               <div
