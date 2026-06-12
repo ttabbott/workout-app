@@ -5,7 +5,7 @@ import { DayWorkout, WorkoutKey } from './types'
 // ─────────────────────────────────────────────────────────────────────────────
 export const WORKOUT_MODE: 'short' | 'full' = 'short'
 
-// ─── Workout A — Push · SHORT (~30 min + 5 min warm-up) ──────────────────────
+// ─── Workout A — Push · SHORT (~25 min + 10 min cardio + 5 min warm-up) ─────
 // Bench Press → Incline DB → Lateral Raise → Tricep Pushdown → Row finisher
 
 const WORKOUT_A_SHORT: DayWorkout = {
@@ -44,6 +44,7 @@ const WORKOUT_A_SHORT: DayWorkout = {
       setDetails: [
         { weight: 15, reps: '12' },
         { weight: 15, reps: '12' },
+        { weight: 15, reps: '12' },
       ],
     },
     {
@@ -54,6 +55,7 @@ const WORKOUT_A_SHORT: DayWorkout = {
       setDetails: [
         { weight: 40, reps: '10' },
         { weight: 40, reps: '10' },
+        { weight: 40, reps: '10' },
       ],
       youtubeUrl: 'https://www.youtube.com/results?search_query=tricep+cable+pushdown+form',
     },
@@ -61,7 +63,7 @@ const WORKOUT_A_SHORT: DayWorkout = {
       id: 'a-cardio',
       name: 'Rowing Machine',
       type: 'cardio',
-      duration: 8,
+      duration: 10,
       intensity: 'Moderate steady pace — focus on full stroke, keep damper at 4–5',
     },
   ],
@@ -155,7 +157,7 @@ const WORKOUT_A_FULL: DayWorkout = {
   ],
 }
 
-// ─── Workout B — Pull · SHORT (~30 min + 5 min warm-up) ─────────────────────
+// ─── Workout B — Pull · SHORT (~25 min + 10 min cardio + 5 min warm-up) ─────
 // RDL → Pull-Ups → Cable Row → Hammer Curl → Bike finisher
 
 const WORKOUT_B_SHORT: DayWorkout = {
@@ -206,14 +208,15 @@ const WORKOUT_B_SHORT: DayWorkout = {
       setDetails: [
         { weight: 30, reps: '12' },
         { weight: 30, reps: '10' },
+        { weight: 30, reps: '10' },
       ],
     },
     {
       id: 'b-cardio',
       name: 'Stationary Bike HIIT',
       type: 'cardio',
-      duration: 8,
-      intensity: '4 rounds: 30s all-out sprint / 90s easy pedal',
+      duration: 10,
+      intensity: '5 rounds: 30s all-out sprint / 90s easy pedal',
     },
   ],
 }
@@ -296,7 +299,7 @@ const WORKOUT_B_FULL: DayWorkout = {
   ],
 }
 
-// ─── Workout C — Legs · SHORT (~30 min + 5 min warm-up) ─────────────────────
+// ─── Workout C — Legs · SHORT (~25 min + 10 min cardio + 5 min warm-up) ─────
 // Squat → Leg Press → Leg Curl → Stairmaster finisher
 
 const WORKOUT_C_SHORT: DayWorkout = {
@@ -335,13 +338,14 @@ const WORKOUT_C_SHORT: DayWorkout = {
       setDetails: [
         { weight: 80, reps: '10' },
         { weight: 90, reps: '8'  },
+        { weight: 90, reps: '8'  },
       ],
     },
     {
       id: 'c-cardio',
       name: 'Stairmaster',
       type: 'cardio',
-      duration: 8,
+      duration: 10,
       intensity: 'Moderate (level 7–8) — steady grind to finish the legs session',
     },
   ],
@@ -423,7 +427,7 @@ const WORKOUT_C_FULL: DayWorkout = {
   ],
 }
 
-// ─── Workout D — Shoulders / Core · SHORT (~28 min + 5 min warm-up) ─────────
+// ─── Workout D — Shoulders / Core · SHORT (~25 min + 10 min cardio + 5 min warm-up) ─
 // Shoulder Press → Face Pull → Plank → Treadmill finisher
 
 const WORKOUT_D_SHORT: DayWorkout = {
@@ -463,13 +467,14 @@ const WORKOUT_D_SHORT: DayWorkout = {
       setDetails: [
         { unit: 'bodyweight', reps: '60s' },
         { unit: 'bodyweight', reps: '60s' },
+        { unit: 'bodyweight', reps: '60s' },
       ],
     },
     {
       id: 'd-cardio',
       name: 'Treadmill Incline Walk',
       type: 'cardio',
-      duration: 7,
+      duration: 10,
       intensity: 'Moderate (incline 10, speed 3.5)',
     },
   ],
